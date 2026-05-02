@@ -11,6 +11,19 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   ...pluginVue.configs['flat/recommended'],
   {
+    files: [
+      'pages/**/*.vue',
+      'layouts/**/*.vue',
+      'app/pages/**/*.vue',
+      'app/layouts/**/*.vue',
+      'app/components/**/*.vue',
+      'app/error.vue',
+    ],
+    rules: {
+      'vue/multi-word-component-names': 'off',
+    },
+  },
+  {
     files: ['**/*.vue'],
     languageOptions: {
       parser: vueParser,
