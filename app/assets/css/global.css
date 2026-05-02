@@ -1,0 +1,47 @@
+/* 全站字型、Vuetify shell、深色底圖（淺色交由 theme） */
+:root {
+  font-family:
+    'Geist Sans',
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body,
+.v-application {
+  font-family:
+    'Geist Sans',
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+}
+
+.v-application .v-main {
+  background: transparent !important;
+}
+
+.v-tabs .v-slide-group__content .v-tab__slider {
+  height: 3px;
+  border-radius: 999px;
+}
+
+.v-theme--dark .v-application .mui-card,
+.v-application.v-theme--dark .mui-card {
+  box-shadow: 0 18px 35px rgba(0, 0, 0, 0.25);
+}
+
+.v-theme--dark .v-application,
+.v-application.v-theme--dark {
+  background-color: rgb(var(--v-theme-background));
+  background-image:
+    radial-gradient(circle at 20% 0%, rgba(139, 92, 246, 0.18), transparent 36%),
+    radial-gradient(circle at 82% 10%, rgba(56, 189, 248, 0.12), transparent 34%),
+    linear-gradient(165deg, #07080f 0%, #12172a 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}

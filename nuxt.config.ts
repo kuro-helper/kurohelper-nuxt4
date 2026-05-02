@@ -7,7 +7,7 @@ export default defineNuxtConfig({
     '@fontsource/geist-sans/400.css',
     '@fontsource/geist-sans/600.css',
     '@fontsource/geist-sans/700.css',
-    '~/assets/css/kuro-shell.css',
+    '~/assets/css/global.css',
   ],
   runtimeConfig: {
     apiBaseUrl: process.env.API_BASE_URL ?? '',
@@ -87,7 +87,7 @@ export default defineNuxtConfig({
           rounded: 'lg',
           elevation: 0,
           variant: 'outlined',
-          class: 'kuro-mui-card',
+          class: 'mui-card',
         },
         VChip: {
           rounded: 'pill',
