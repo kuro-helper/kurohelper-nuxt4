@@ -23,8 +23,7 @@
 </template>
 
 <script setup lang="ts">
-import type { RegisterSubmitInfo } from '~/utils/register-submit-info';
-import { consumeRegisterSubmitInfo } from '~/utils/register-submit-info';
+import { consumeRegisterSubmitInfo, type RegisterSubmitInfo } from '~/utils/register';
 
 const ready = ref(false);
 const result = ref<RegisterSubmitInfo | null>(null);

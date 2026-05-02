@@ -73,8 +73,7 @@
 </template>
 
 <script setup lang="ts">
-import { lookupRegisterInvite } from '~/utils/register-invite';
-import { setRegisterSubmitInfo } from '~/utils/register-submit-info';
+import { lookupRegisterInvite, setRegisterSubmitInfo } from '~/utils/register';
 
 type LookupState =
   | { status: 'loading' }
