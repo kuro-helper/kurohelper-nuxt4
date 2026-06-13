@@ -1,5 +1,5 @@
 <template>
-  <v-container max-width="md" class="py-8 px-4">
+  <v-container max-width="lg" class="py-8 px-4">
     <v-card
       variant="outlined"
       class="rounded-xl overflow-hidden"
@@ -46,42 +46,105 @@
           <v-chip label>更新時間：{{ user.updatedAt }}</v-chip>
         </div>
 
-        <div class="mb-2 text-subtitle-2">遊戲紀錄（UserGame）</div>
-        <div v-if="user.userGames.length === 0" class="text-body-2 text-medium-emphasis">
-          尚無關聯遊戲資料。
+        <div class="d-flex align-center justify-space-between flex-wrap ga-2 mb-4">
+          <div class="text-subtitle-1 font-weight-bold">遊戲紀錄（UserGame）</div>
+          <v-chip size="small" variant="tonal" color="primary"
+            >{{ user.userGames.length }} 筆</v-chip
+          >
         </div>
-        <v-table v-else density="comfortable" class="rounded border bg-surface">
-          <thead>
-            <tr>
-              <th class="text-start">gameErogsId</th>
-              <th class="text-start">status</th>
-              <th class="text-center">願望清單</th>
-              <th class="text-center">黑名單</th>
-              <th class="text-start">開始</th>
-              <th class="text-start">完食</th>
-              <th class="text-start">建立</th>
-              <th class="text-start">更新</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(ug, idx) in user.userGames" :key="`${ug.gameErogsId}-${idx}`">
-              <td>{{ ug.gameErogsId }}</td>
-              <td>{{ ug.status }}</td>
-              <td class="text-center">{{ ug.wishListMark ? '是' : '否' }}</td>
-              <td class="text-center">{{ ug.blackListMark ? '是' : '否' }}</td>
-              <td class="text-caption">{{ ug.startDate ?? '—' }}</td>
-              <td class="text-caption">{{ ug.finishedDate ?? '—' }}</td>
-              <td class="text-caption text-medium-emphasis">{{ ug.createdAt }}</td>
-              <td class="text-caption text-medium-emphasis">{{ ug.updatedAt }}</td>
-            </tr>
-          </tbody>
-        </v-table>
+
+        <v-sheet
+          v-if="user.userGames.length === 0"
+          rounded="xl"
+          border
+          color="surface-variant"
+          class="empty-state pa-8 text-center"
+        >
+          <v-img :src="PLACEHOLDER_IMAGE_URL" alt="" max-width="120" class="mx-auto mb-4" />
+          <p class="text-body-2 text-medium-emphasis mb-0">尚無關聯遊戲資料。</p>
+        </v-sheet>
+
+        <div v-else class="game-grid">
+          <v-card
+            v-for="(ug, idx) in user.userGames"
+            :key="`${ug.gameErogsId}-${idx}`"
+            rounded="xl"
+            variant="outlined"
+            class="game-card d-flex flex-column"
+          >
+            <v-img :src="PLACEHOLDER_IMAGE_URL" height="140" cover class="flex-shrink-0">
+              <template #placeholder>
+                <div class="d-flex align-center justify-center fill-height bg-surface-variant">
+                  <v-progress-circular indeterminate color="primary" size="32" />
+                </div>
+              </template>
+            </v-img>
+
+            <v-card-item class="pb-2">
+              <v-card-title class="text-subtitle-1 font-weight-bold pa-0">
+                Erogs #{{ ug.gameErogsId }}
+              </v-card-title>
+              <v-card-subtitle class="pa-0 mt-2">
+                <div class="d-flex flex-wrap ga-2">
+                  <v-chip
+                    size="x-small"
+                    :color="ug.status === 1 ? 'success' : 'secondary'"
+                    variant="tonal"
+                  >
+                    {{ statusLabel(ug.status) }}
+                  </v-chip>
+                  <v-chip
+                    v-if="ug.wishListMark"
+                    size="x-small"
+                    color="pink"
+                    variant="tonal"
+                    prepend-icon="mdi-heart"
+                  >
+                    願望清單
+                  </v-chip>
+                  <v-chip
+                    v-if="ug.blackListMark"
+                    size="x-small"
+                    color="error"
+                    variant="tonal"
+                    prepend-icon="mdi-cancel"
+                  >
+                    黑名單
+                  </v-chip>
+                </div>
+              </v-card-subtitle>
+            </v-card-item>
+
+            <v-card-text class="pt-0 mt-auto">
+              <div class="game-meta">
+                <div class="game-meta-row">
+                  <span class="game-meta-label">開始</span>
+                  <span class="game-meta-value">{{ ug.startDate ?? '—' }}</span>
+                </div>
+                <div class="game-meta-row">
+                  <span class="game-meta-label">完食</span>
+                  <span class="game-meta-value">{{ ug.finishedDate ?? '—' }}</span>
+                </div>
+                <div class="game-meta-row">
+                  <span class="game-meta-label">建立</span>
+                  <span class="game-meta-value text-medium-emphasis">{{ ug.createdAt }}</span>
+                </div>
+                <div class="game-meta-row">
+                  <span class="game-meta-label">更新</span>
+                  <span class="game-meta-value text-medium-emphasis">{{ ug.updatedAt }}</span>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </div>
       </v-card-text>
     </v-card>
   </v-container>
 </template>
 
 <script setup lang="ts">
+const PLACEHOLDER_IMAGE_URL = 'https://image.kurohelper.com/docs/neneGIF.gif';
+
 type MockUserGame = {
   userId: number;
   gameErogsId: number;
@@ -149,8 +212,9 @@ const idParam = computed(() =>
 const user = computed<MockUser>(() => {
   const key = idParam.value.trim();
   const fallbackId = Number.isFinite(Number(key)) ? Number(key) : 0;
-  if (MOCK_USERS[key]) {
-    return MOCK_USERS[key];
+  const mock = MOCK_USERS[key];
+  if (mock) {
+    return mock;
   }
   return {
     id: fallbackId || 0,
@@ -169,4 +233,60 @@ const initials = computed(() => {
   const n = user.value.name.trim();
   return n ? n.slice(0, 1).toUpperCase() : '?';
 });
+
+function statusLabel(status: number) {
+  if (status === 1) return '已完食';
+  if (status === 0) return '進行中／未標記';
+  return `狀態 ${status}`;
+}
 </script>
+
+<style scoped>
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.game-card {
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+  height: 100%;
+}
+
+.game-card:hover {
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.14) !important;
+  transform: translateY(-2px);
+}
+
+.game-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.game-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 0.8125rem;
+}
+
+.game-meta-label {
+  flex-shrink: 0;
+  color: rgba(var(--v-theme-on-surface), 0.7);
+  font-weight: 600;
+}
+
+.game-meta-value {
+  text-align: right;
+  word-break: break-word;
+}
+
+.empty-state {
+  border-style: dashed;
+}
+</style>
