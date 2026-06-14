@@ -42,15 +42,34 @@
             <v-chip label color="secondary" variant="tonal">尚未綁定 Discord</v-chip>
           </template>
           <v-chip label>角色代碼：{{ user.role }}</v-chip>
-          <v-chip label>建立時間：{{ user.createdAt }}</v-chip>
-          <v-chip label>更新時間：{{ user.updatedAt }}</v-chip>
+          <v-chip label>建立時間：{{ fmtLocalDate(user.createdAt) }}</v-chip>
+          <v-chip label>更新時間：{{ fmtLocalDate(user.updatedAt) }}</v-chip>
         </div>
 
         <div class="d-flex align-center justify-space-between flex-wrap ga-2 mb-4">
           <div class="text-subtitle-1 font-weight-bold">遊戲紀錄（UserGame）</div>
-          <v-chip size="small" variant="tonal" color="primary"
-            >{{ user.userGames.length }} 筆</v-chip
-          >
+          <div class="d-flex align-center flex-wrap ga-2">
+            <v-chip size="small" variant="tonal" color="primary"
+              >{{ user.userGames.length }} 筆</v-chip
+            >
+            <v-btn-toggle
+              v-model="gameViewMode"
+              mandatory
+              density="compact"
+              color="primary"
+              variant="outlined"
+              divided
+            >
+              <v-btn value="card" size="small">
+                <v-icon start>mdi-view-grid</v-icon>
+                卡片
+              </v-btn>
+              <v-btn value="table" size="small">
+                <v-icon start>mdi-table</v-icon>
+                表格
+              </v-btn>
+            </v-btn-toggle>
+          </div>
         </div>
 
         <v-sheet
@@ -64,7 +83,7 @@
           <p class="text-body-2 text-medium-emphasis mb-0">尚無關聯遊戲資料。</p>
         </v-sheet>
 
-        <div v-else class="game-grid">
+        <div v-else-if="gameViewMode === 'card'" class="game-grid">
           <v-card
             v-for="(ug, idx) in user.userGames"
             :key="`${ug.gameErogsId}-${idx}`"
@@ -119,24 +138,55 @@
               <div class="game-meta">
                 <div class="game-meta-row">
                   <span class="game-meta-label">開始</span>
-                  <span class="game-meta-value">{{ ug.startDate ?? '—' }}</span>
+                  <span class="game-meta-value">{{ fmtLocalDate(ug.startDate) }}</span>
                 </div>
                 <div class="game-meta-row">
                   <span class="game-meta-label">完食</span>
-                  <span class="game-meta-value">{{ ug.finishedDate ?? '—' }}</span>
+                  <span class="game-meta-value">{{ fmtLocalDate(ug.finishedDate) }}</span>
                 </div>
                 <div class="game-meta-row">
                   <span class="game-meta-label">建立</span>
-                  <span class="game-meta-value text-medium-emphasis">{{ ug.createdAt }}</span>
+                  <span class="game-meta-value text-medium-emphasis">{{
+                    fmtLocalDate(ug.createdAt)
+                  }}</span>
                 </div>
                 <div class="game-meta-row">
                   <span class="game-meta-label">更新</span>
-                  <span class="game-meta-value text-medium-emphasis">{{ ug.updatedAt }}</span>
+                  <span class="game-meta-value text-medium-emphasis">{{
+                    fmtLocalDate(ug.updatedAt)
+                  }}</span>
                 </div>
               </div>
             </v-card-text>
           </v-card>
         </div>
+
+        <v-table v-else density="comfortable" class="rounded border bg-surface">
+          <thead>
+            <tr>
+              <th class="text-start">gameErogsId</th>
+              <th class="text-start">status</th>
+              <th class="text-center">願望清單</th>
+              <th class="text-center">黑名單</th>
+              <th class="text-start">開始</th>
+              <th class="text-start">完食</th>
+              <th class="text-start">建立</th>
+              <th class="text-start">更新</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(ug, idx) in user.userGames" :key="`table-${ug.gameErogsId}-${idx}`">
+              <td>{{ ug.gameErogsId }}</td>
+              <td>{{ ug.status }}</td>
+              <td class="text-center">{{ ug.wishListMark ? '是' : '否' }}</td>
+              <td class="text-center">{{ ug.blackListMark ? '是' : '否' }}</td>
+              <td class="text-caption">{{ fmtLocalDate(ug.startDate) }}</td>
+              <td class="text-caption">{{ fmtLocalDate(ug.finishedDate) }}</td>
+              <td class="text-caption text-medium-emphasis">{{ fmtLocalDate(ug.createdAt) }}</td>
+              <td class="text-caption text-medium-emphasis">{{ fmtLocalDate(ug.updatedAt) }}</td>
+            </tr>
+          </tbody>
+        </v-table>
       </v-card-text>
     </v-card>
   </v-container>
@@ -144,6 +194,10 @@
 
 <script setup lang="ts">
 const PLACEHOLDER_IMAGE_URL = 'https://image.kurohelper.com/docs/neneGIF.gif';
+
+type GameViewMode = 'card' | 'table';
+
+const gameViewMode = ref<GameViewMode>('card');
 
 type MockUserGame = {
   userId: number;
@@ -238,6 +292,21 @@ function statusLabel(status: number) {
   if (status === 1) return '已完食';
   if (status === 0) return '進行中／未標記';
   return `狀態 ${status}`;
+}
+
+function fmtLocalDate(input?: string | null) {
+  if (!input || input === '—') return '—';
+  const trimmed = input.trim();
+  const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+  const date = dateOnlyMatch
+    ? new Date(Number(dateOnlyMatch[1]), Number(dateOnlyMatch[2]) - 1, Number(dateOnlyMatch[3]))
+    : new Date(trimmed);
+  if (Number.isNaN(date.getTime())) return trimmed;
+  return date.toLocaleDateString('zh-TW', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
 }
 </script>
 
