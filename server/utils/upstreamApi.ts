@@ -52,10 +52,12 @@ const getUpstreamAuth = () => {
   const token = String(config.apiToken || '').trim();
 
   if (!baseURL) {
-    throw createError({ statusCode: 500, message: 'Missing API_BASE_URL configuration' });
+    consola.error('[BFF] Missing API_BASE_URL configuration');
+    throw createError({ statusCode: 500 });
   }
   if (!token) {
-    throw createError({ statusCode: 500, message: 'Missing API_TOKEN configuration' });
+    consola.error('[BFF] Missing API_TOKEN configuration');
+    throw createError({ statusCode: 500 });
   }
   return { baseURL, token };
 };
@@ -63,16 +65,10 @@ const getUpstreamAuth = () => {
 const throwUpstreamError = (path: string, err: unknown): never => {
   const e = err as UpstreamFetchError;
   const statusCode = e.statusCode ?? e.status ?? 502;
-  const data = e.data;
-  const detail = pickMessage(data, err) || '(no message)';
-  consola.warn(`[BFF] ${path}`, `${statusCode}: ${detail}`);
+  const detail = pickMessage(e.data, err) || '(no message)';
+  consola.error(`[BFF] ${path}`, statusCode, detail, e.data ?? err);
 
-  const message = pickMessage(data, err);
-  throw createError({
-    statusCode,
-    ...(data !== undefined ? { data } : {}),
-    ...(message ? { message } : {}),
-  });
+  throw createError({ statusCode });
 };
 
 const callUpstream = async <T>(opts: {

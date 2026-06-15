@@ -12,3 +12,12 @@ export const forwardRegisterLookup = <T>(upstreamPath: string) =>
         register_id: String(getRouterParam(event, 'id') ?? '').trim(),
       }),
   );
+
+export const forwardGetByRouterParam = <T>(
+  buildUpstreamPath: (param: string) => string,
+  paramName = 'id',
+) =>
+  defineEventHandler((event): Promise<T> => {
+    const param = String(getRouterParam(event, paramName) ?? '').trim();
+    return fetchUpstreamApi<T>(buildUpstreamPath(param), {});
+  });

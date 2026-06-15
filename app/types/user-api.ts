@@ -4,8 +4,10 @@ export type ApiResponse<T> = {
 };
 
 export type UserItem = {
-  id: string;
+  id: number;
   name: string;
+  discordId: string;
+  role: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -35,6 +37,54 @@ export type UserInWishDto = {
   brandName: string;
   disband: boolean;
   brandGameCount: number;
+};
+
+export type UserGameBrandErogsDto = {
+  id: number;
+  name: string;
+  disband: boolean;
+  gameCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type UserGameErogsDto = {
+  id: number;
+  brandErogsId: number;
+  name: string;
+  image: string;
+  createdAt: string;
+  updatedAt: string;
+  brandErogs?: UserGameBrandErogsDto;
+};
+
+export type UserGameDto = {
+  userId: number;
+  gameErogsId: number;
+  status: string;
+  wishListMark: boolean;
+  blackListMark: boolean;
+  startDate?: string | null;
+  finishedDate?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  gameErogs?: UserGameErogsDto;
+};
+
+export type UserProfileDto = {
+  id: number;
+  name: string;
+  discordId?: string;
+  avatar: string;
+  description: string;
+  role: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type GetUserGameDto = {
+  user: UserProfileDto;
+  games: UserGameDto[];
 };
 
 export type ApiErrorResponse = {
