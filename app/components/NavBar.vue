@@ -92,7 +92,7 @@ const password = ref('');
 const navItems = [
   { to: '/', label: '首頁' },
   { to: '/game/1001', label: '遊戲詳情範例' },
-  { to: '/user/1001', label: '使用者資料' },
+  { to: '/user', label: '使用者資料' },
 ] as const;
 
 const closeLogin = () => {
