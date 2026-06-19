@@ -12,33 +12,6 @@ export type UserItem = {
   updatedAt: string;
 };
 
-export type UserHasPlayedDto = {
-  userId: string;
-  gameErogsId: number;
-  completedAt?: string | null;
-  createdAt: string;
-  gameId: number;
-  brandId: number;
-  gameName: string;
-  gameImage: string;
-  brandName: string;
-  disband: boolean;
-  brandGameCount: number;
-};
-
-export type UserInWishDto = {
-  userId: string;
-  gameErogsId: number;
-  createdAt: string;
-  gameId: number;
-  brandId: number;
-  gameName: string;
-  gameImage: string;
-  brandName: string;
-  disband: boolean;
-  brandGameCount: number;
-};
-
 export type UserGameBrandErogsDto = {
   id: number;
   name: string;
