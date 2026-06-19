@@ -143,7 +143,7 @@ const resetCredentials = () => {
 };
 
 const validateCredentials = ():
-  | { ok: true; payload: { user_name: string; password: string } }
+  | { ok: true; payload: { userName: string; password: string } }
   | { ok: false; error: string } => {
   touched.accountName = true;
   touched.password = true;
@@ -151,7 +151,7 @@ const validateCredentials = ():
   if (accountErr.value) return { ok: false, error: accountErr.value };
   if (pwdErr.value) return { ok: false, error: pwdErr.value };
   if (confirmErr.value) return { ok: false, error: confirmErr.value };
-  return { ok: true, payload: { user_name: accountName.value.trim(), password: password.value } };
+  return { ok: true, payload: { userName: accountName.value.trim(), password: password.value } };
 };
 
 const runLookup = async () => {
@@ -196,8 +196,8 @@ const handleCredentialSubmit = async () => {
       cache: 'no-store',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        register_id: props.invitationId.trim(),
-        user_name: v.payload.user_name,
+        registerId: props.invitationId.trim(),
+        userName: v.payload.userName,
         password: v.payload.password,
       }),
     });

@@ -39,8 +39,8 @@ export const lookupRegisterInvite = async (invitationId: string): Promise<Regist
   try {
     const res = await fetch(`/api/register/${encodeURIComponent(id)}`, { cache: 'no-store' });
     if (!res.ok) return { found: false };
-    const json = (await res.json()) as ApiEnvelope<{ discord_id: string }>;
-    const discordId = json.data?.discord_id;
+    const json = (await res.json()) as ApiEnvelope<{ discordId: string }>;
+    const discordId = json.data?.discordId;
     return discordId ? { found: true, discordId } : { found: false };
   } catch {
     return { found: false };

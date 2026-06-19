@@ -9,7 +9,7 @@ export const forwardRegisterLookup = <T>(upstreamPath: string) =>
   defineEventHandler(
     (event): Promise<T> =>
       fetchUpstreamApi<T>(upstreamPath, {
-        register_id: String(getRouterParam(event, 'id') ?? '').trim(),
+        registerId: String(getRouterParam(event, 'id') ?? '').trim(),
       }),
   );
 

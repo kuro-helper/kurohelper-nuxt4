@@ -321,6 +321,7 @@ const {
         user: {
           id: 0,
           name: '',
+          discordId: '',
           avatar: '',
           description: '',
           role: 0,
@@ -361,7 +362,7 @@ const user = computed(() => {
   return {
     id: profile?.id ?? 0,
     name: profile?.name?.trim() || `使用者 #${idParam.value}`,
-    discordId: profile?.discordId?.trim() || null,
+    discordId: profile?.discordId?.trim() || '',
     avatar: profile?.avatar?.trim() || '',
     description: profile?.description?.trim() || '',
     createdAt: profile?.createdAt || '—',

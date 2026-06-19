@@ -20,7 +20,7 @@ export type UserHasPlayedDto = {
   gameId: number;
   brandId: number;
   gameName: string;
-  gameimage: string;
+  gameImage: string;
   brandName: string;
   disband: boolean;
   brandGameCount: number;
@@ -33,7 +33,7 @@ export type UserInWishDto = {
   gameId: number;
   brandId: number;
   gameName: string;
-  gameimage: string;
+  gameImage: string;
   brandName: string;
   disband: boolean;
   brandGameCount: number;
@@ -74,7 +74,7 @@ export type UserGameDto = {
 export type UserProfileDto = {
   id: number;
   name: string;
-  discordId?: string;
+  discordId: string;
   avatar: string;
   description: string;
   role: number;
@@ -107,5 +107,5 @@ export type FetchErrorLike = {
 };
 
 export type RegisterLookupData = {
-  discord_id: string;
+  discordId: string;
 };
