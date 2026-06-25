@@ -10,8 +10,10 @@ export default defineNuxtConfig({
     '~/assets/css/global.css',
   ],
   runtimeConfig: {
-    apiBaseUrl: process.env.API_BASE_URL ?? '',
-    apiToken: process.env.API_TOKEN ?? '',
+    // runtimeConfig.apiBaseUrl ← NUXT_API_BASE_URL
+    // runtimeConfig.apiToken   ← NUXT_API_TOKEN
+    apiBaseUrl: '',
+    apiToken: '',
     public: {},
   },
   build: {
