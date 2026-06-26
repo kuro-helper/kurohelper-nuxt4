@@ -19,7 +19,10 @@ export default defineNuxtConfig({
   build: {
     transpile: ['vuetify'],
   },
-  modules: ['vuetify-nuxt-module'],
+  modules: ['@nuxt/eslint', 'vuetify-nuxt-module'],
+  eslint: {
+    checker: false,
+  },
   vuetify: {
     vuetifyOptions: {
       theme: {
