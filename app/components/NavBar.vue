@@ -47,7 +47,20 @@
           </template>
         </v-tooltip>
         <v-btn variant="text" class="text-none mr-1" height="48" to="/game/1001">遊戲頁展示</v-btn>
-        <v-btn variant="text" class="text-none" height="48" @click="loginOpen = true">登入</v-btn>
+        <v-btn
+          v-if="isLoggedIn && user"
+          variant="text"
+          class="text-none px-2"
+          height="48"
+          :to="`/user/${user.id}`"
+        >
+          <v-avatar size="32" class="mr-2">
+            <v-img v-if="user.avatar" :src="user.avatar" :alt="user.name" cover />
+            <span v-else class="text-caption font-weight-bold">{{ userInitials }}</span>
+          </v-avatar>
+          {{ user.name }}
+        </v-btn>
+        <v-btn v-else variant="text" class="text-none" height="48" @click="openLogin">登入</v-btn>
       </v-toolbar>
     </v-app-bar>
 
@@ -68,13 +81,32 @@
       <v-card rounded="xl" variant="flat" color="surface" elevation="12" class="login-dialog-card">
         <v-card-title>登入</v-card-title>
         <v-card-text>
-          <v-text-field v-model="username" label="帳號" class="mt-2" autofocus hide-details />
-          <v-text-field v-model="password" type="password" label="密碼" class="mt-4" hide-details />
+          <v-alert v-if="loginError" type="error" variant="tonal" density="compact" class="mb-4">
+            {{ loginError }}
+          </v-alert>
+          <v-text-field
+            v-model="username"
+            label="帳號"
+            class="mt-2"
+            autofocus
+            hide-details
+            :disabled="loginLoading"
+            @keyup.enter="submitLogin"
+          />
+          <v-text-field
+            v-model="password"
+            type="password"
+            label="密碼"
+            class="mt-4"
+            hide-details
+            :disabled="loginLoading"
+            @keyup.enter="submitLogin"
+          />
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="loginOpen = false">取消</v-btn>
-          <v-btn color="primary" @click="closeLogin">登入</v-btn>
+          <v-btn variant="text" :disabled="loginLoading" @click="loginOpen = false">取消</v-btn>
+          <v-btn color="primary" :loading="loginLoading" @click="submitLogin">登入</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -83,11 +115,14 @@
 
 <script setup lang="ts">
 const { isDark, toggleTheme } = useAppTheme();
+const { user, isLoggedIn, login } = useAuth();
 
 const drawer = ref(false);
 const loginOpen = ref(false);
 const username = ref('');
 const password = ref('');
+const loginLoading = ref(false);
+const loginError = ref('');
 
 const navItems = [
   { to: '/', label: '首頁' },
@@ -95,8 +130,37 @@ const navItems = [
   { to: '/user', label: '使用者資料' },
 ] as const;
 
-const closeLogin = () => {
-  loginOpen.value = false;
+const userInitials = computed(() => {
+  const name = user.value?.name?.trim() || '';
+  if (!name) return '?';
+  return name.slice(0, 1).toUpperCase();
+});
+
+const openLogin = () => {
+  loginError.value = '';
+  loginOpen.value = true;
+};
+
+const submitLogin = async () => {
+  loginError.value = '';
+  const userName = username.value.trim();
+  const pwd = password.value.trim();
+  if (!userName || !pwd) {
+    loginError.value = '請輸入帳號與密碼';
+    return;
+  }
+
+  loginLoading.value = true;
+  try {
+    await login(userName, pwd);
+    loginOpen.value = false;
+    username.value = '';
+    password.value = '';
+  } catch (err) {
+    loginError.value = authErrorMessage(err);
+  } finally {
+    loginLoading.value = false;
+  }
 };
 </script>
 

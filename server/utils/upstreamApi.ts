@@ -1,4 +1,4 @@
-import { createError } from 'h3';
+import { appendResponseHeader, createError, getRequestHeader, type H3Event } from 'h3';
 import { consola } from 'consola';
 import { useRuntimeConfig } from 'nitropack/runtime/internal/config';
 import { $fetch } from 'ofetch';
@@ -62,13 +62,28 @@ const getUpstreamAuth = () => {
   return { baseURL, token };
 };
 
+const forwardSetCookies = (event: H3Event, headers: Headers) => {
+  if (typeof headers.getSetCookie === 'function') {
+    for (const cookie of headers.getSetCookie()) {
+      appendResponseHeader(event, 'set-cookie', cookie);
+    }
+    return;
+  }
+  const raw = headers.get('set-cookie');
+  if (raw) appendResponseHeader(event, 'set-cookie', raw);
+};
+
 const throwUpstreamError = (path: string, err: unknown): never => {
   const e = err as UpstreamFetchError;
   const statusCode = e.statusCode ?? e.status ?? 502;
-  const detail = pickMessage(e.data, err) || '(no message)';
-  consola.error(`[BFF] ${path}`, statusCode, detail, e.data ?? err);
+  const message = pickMessage(e.data, err);
+  consola.error(`[BFF] ${path}`, statusCode, message || '(no message)', e.data ?? err);
 
-  throw createError({ statusCode });
+  throw createError({
+    statusCode,
+    statusMessage: message || undefined,
+    data: e.data,
+  });
 };
 
 const callUpstream = async <T>(opts: {
@@ -76,14 +91,31 @@ const callUpstream = async <T>(opts: {
   method: 'GET' | 'POST';
   query?: QueryObject;
   body?: unknown;
+  event?: H3Event;
 }): Promise<T> => {
   const { baseURL, token } = getUpstreamAuth();
   const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
-  if (opts.method === 'POST') {
-    headers['Content-Type'] = 'application/json';
+  if (opts.method === 'POST') headers['Content-Type'] = 'application/json';
+  if (opts.event) {
+    const cookie = getRequestHeader(opts.event, 'cookie');
+    if (cookie) headers.Cookie = cookie;
   }
 
   try {
+    if (opts.event) {
+      const res = await $fetch.raw(opts.path, {
+        baseURL,
+        method: opts.method,
+        headers,
+        retry: 0,
+        ...(opts.method === 'GET'
+          ? { query: normalizeQuery(opts.query ?? {}) }
+          : { body: opts.body as Record<string, unknown> }),
+      });
+      forwardSetCookies(opts.event, res.headers);
+      return res._data as T;
+    }
+
     return (await $fetch(opts.path, {
       baseURL,
       method: opts.method,
@@ -98,10 +130,13 @@ const callUpstream = async <T>(opts: {
   }
 };
 
-/** GET：query 轉發 kurohelper-api（路徑如 `/api/user`） */
-export const fetchUpstreamApi = <T>(path: string, query: QueryObject): Promise<T> =>
-  callUpstream<T>({ path, method: 'GET', query });
+/** GET：query 轉發 kurohelper-api。傳 event 時會轉發 Cookie / Set-Cookie（登入 session 用）。 */
+export const fetchUpstreamApi = <T>(
+  path: string,
+  query: QueryObject,
+  event?: H3Event,
+): Promise<T> => callUpstream<T>({ path, method: 'GET', query, event });
 
-/** POST：body 已為物件，由 $fetch 序列化 JSON */
-export const postUpstreamApi = <T>(path: string, body: unknown): Promise<T> =>
-  callUpstream<T>({ path, method: 'POST', body });
+/** POST：body 轉發 kurohelper-api。傳 event 時會轉發 Cookie / Set-Cookie（登入 session 用）。 */
+export const postUpstreamApi = <T>(path: string, body: unknown, event?: H3Event): Promise<T> =>
+  callUpstream<T>({ path, method: 'POST', body, event });
