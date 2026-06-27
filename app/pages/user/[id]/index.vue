@@ -32,20 +32,32 @@
         </v-sheet>
 
         <template v-else>
-          <div class="d-flex ga-4 align-start mb-6">
-            <v-avatar size="96" rounded="lg">
-              <v-img v-if="user.avatar" :src="user.avatar" alt="" cover />
-              <span v-else class="text-h4">{{ initials }}</span>
-            </v-avatar>
-            <div class="flex-grow-1 min-w-0">
-              <div class="d-flex align-center flex-wrap ga-2">
-                <h1 class="text-h4 font-weight-bold">{{ user.name }}</h1>
-                <v-chip v-if="user.discordId" color="primary" variant="tonal" label>
-                  Discord：{{ user.discordId }}
-                </v-chip>
-                <v-chip v-else color="error" variant="tonal" label> 尚未綁定 Discord </v-chip>
+          <div class="d-flex ga-4 align-center justify-space-between mb-6">
+            <div class="d-flex ga-4 align-start flex-grow-1 min-w-0">
+              <v-avatar size="96" rounded="lg">
+                <v-img v-if="user.avatar" :src="user.avatar" alt="" cover />
+                <span v-else class="text-h4">{{ initials }}</span>
+              </v-avatar>
+              <div class="flex-grow-1 min-w-0">
+                <UserIdentity :nick-name="user.nickName" :user-name="user.userName" size="lg" />
+                <div class="d-flex flex-wrap ga-2 mt-2">
+                  <v-chip v-if="user.discordId" color="primary" variant="tonal" label>
+                    Discord：{{ user.discordId }}
+                  </v-chip>
+                  <v-chip v-else color="error" variant="tonal" label>尚未綁定 Discord</v-chip>
+                </div>
               </div>
             </div>
+            <v-btn
+              v-if="canEditProfile"
+              color="primary"
+              variant="flat"
+              class="text-none flex-shrink-0"
+              prepend-icon="mdi-account-edit"
+              :to="`/user/${idParam}/edit`"
+            >
+              修改個人資料
+            </v-btn>
           </div>
 
           <v-sheet rounded="xl" border color="surface-variant" class="pa-5 mb-6">
@@ -160,15 +172,15 @@
                           </v-card-title>
                           <v-card-subtitle class="pa-0 mt-2">
                             <div class="d-flex flex-wrap ga-2">
+                              <v-chip size="small" variant="tonal" color="info">
+                                ID：{{ ug.gameErogsId }}
+                              </v-chip>
                               <v-chip
                                 size="small"
                                 :color="isDone(ug) ? 'success' : 'secondary'"
                                 variant="tonal"
                               >
-                                狀態：{{ statusLabel(ug) }}
-                              </v-chip>
-                              <v-chip size="small" variant="tonal" color="info">
-                                ID：{{ ug.gameErogsId }}
+                                {{ statusLabel(ug) }}
                               </v-chip>
                             </div>
                           </v-card-subtitle>
@@ -226,12 +238,23 @@
                   </thead>
                   <tbody>
                     <tr v-for="(ug, idx) in userGames" :key="`table-${ug.gameErogsId}-${idx}`">
-                      <td>
-                        <span v-if="gameMarks(ug)" class="mr-1">{{ gameMarks(ug) }}</span>
-                        <span>{{ gameTitle(ug) }}</span>
-                        <v-chip size="small" variant="tonal" color="info" class="ml-2">
-                          ID：{{ ug.gameErogsId }}
-                        </v-chip>
+                      <td class="game-name-td">
+                        <div class="game-name-cell">
+                          <span v-if="gameMarks(ug)" class="game-name-cell__marks">{{
+                            gameMarks(ug)
+                          }}</span>
+                          <span class="game-name-cell__title" :title="gameTitle(ug)">{{
+                            gameTitle(ug)
+                          }}</span>
+                          <v-chip
+                            size="small"
+                            variant="tonal"
+                            color="info"
+                            class="game-name-cell__id flex-shrink-0"
+                          >
+                            ID：{{ ug.gameErogsId }}
+                          </v-chip>
+                        </div>
                       </td>
                       <td>
                         <v-chip
@@ -301,6 +324,18 @@ const idParam = computed(() =>
   typeof route.params.id === 'string' ? route.params.id : (route.params.id?.[0] ?? ''),
 );
 
+const { user: authUser, refresh: refreshAuth } = useAuth();
+await refreshAuth();
+watch(idParam, () => {
+  refreshAuth();
+});
+
+const canEditProfile = computed(() => {
+  const me = authUser.value;
+  if (!me) return false;
+  return String(me.id) === idParam.value;
+});
+
 const emptyApiResponse = <T,>(data: T): ApiResponse<T> => ({
   message: '',
   data,
@@ -320,7 +355,7 @@ const {
       emptyApiResponse<GetUserGameDto>({
         user: {
           id: 0,
-          name: '',
+          nickName: '',
           discordId: '',
           avatar: '',
           description: '',
@@ -361,7 +396,8 @@ const user = computed(() => {
   const profile = gamesResponse.value?.data.user;
   return {
     id: profile?.id ?? 0,
-    name: profile?.name?.trim() || `使用者 #${idParam.value}`,
+    nickName: profile?.nickName?.trim() || `使用者 #${idParam.value}`,
+    userName: profile?.userName?.trim() || '',
     discordId: profile?.discordId?.trim() || '',
     avatar: profile?.avatar?.trim() || '',
     description: profile?.description?.trim() || '',
@@ -371,7 +407,7 @@ const user = computed(() => {
 });
 
 const initials = computed(() => {
-  const n = user.value.name.trim();
+  const n = user.value.nickName.trim();
   return n ? n.slice(0, 1).toUpperCase() : '?';
 });
 
@@ -534,6 +570,36 @@ function fmtLocalDate(input?: string | null) {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.game-name-td {
+  max-width: 0;
+  width: 38%;
+}
+
+.game-name-cell {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.game-name-cell__marks {
+  flex-shrink: 0;
+}
+
+.game-name-cell__title {
+  min-width: 0;
+  flex: 1 1 auto;
+  max-width: 20rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.game-name-cell__id {
+  flex-shrink: 0;
 }
 
 .game-meta {

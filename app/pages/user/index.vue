@@ -48,7 +48,7 @@
               class="user-row"
               @click="navigateTo(`/user/${item.id}`)"
             >
-              <td class="font-weight-medium">{{ item.name || '—' }}</td>
+              <td class="font-weight-medium">{{ item.nickName || '—' }}</td>
               <td>
                 <v-chip v-if="item.discordId" size="small" color="primary" variant="tonal" label>
                   {{ item.discordId }}

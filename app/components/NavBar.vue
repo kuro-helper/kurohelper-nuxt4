@@ -50,15 +50,15 @@
         <v-btn
           v-if="isLoggedIn && user"
           variant="text"
-          class="text-none px-2"
+          class="text-none px-2 nav-user-btn"
           height="48"
           :to="`/user/${user.id}`"
         >
-          <v-avatar size="32" class="mr-2">
-            <v-img v-if="user.avatar" :src="user.avatar" :alt="user.name" cover />
+          <v-avatar size="32" class="mr-2 flex-shrink-0">
+            <v-img v-if="user.avatar" :src="user.avatar" :alt="user.nickName" cover />
             <span v-else class="text-caption font-weight-bold">{{ userInitials }}</span>
           </v-avatar>
-          {{ user.name }}
+          <UserIdentity :nick-name="user.nickName" :user-name="user.userName" size="sm" />
         </v-btn>
         <v-btn v-else variant="text" class="text-none" height="48" @click="openLogin">登入</v-btn>
       </v-toolbar>
@@ -115,7 +115,7 @@
 
 <script setup lang="ts">
 const { isDark, toggleTheme } = useAppTheme();
-const { user, isLoggedIn, login } = useAuth();
+const { user, isLoggedIn, login, refresh } = useAuth();
 
 const drawer = ref(false);
 const loginOpen = ref(false);
@@ -131,13 +131,15 @@ const navItems = [
 ] as const;
 
 const userInitials = computed(() => {
-  const name = user.value?.name?.trim() || '';
+  const name = user.value?.nickName?.trim() || '';
   if (!name) return '?';
   return name.slice(0, 1).toUpperCase();
 });
 
-const openLogin = () => {
+const openLogin = async () => {
   loginError.value = '';
+  await refresh();
+  if (isLoggedIn.value) return;
   loginOpen.value = true;
 };
 
@@ -174,6 +176,11 @@ const submitLogin = async () => {
 .theme-toggle-btn.v-btn {
   border-radius: 50% !important;
   border: 1px solid rgba(var(--v-theme-on-surface), 0.14) !important;
+}
+
+.nav-user-btn :deep(.v-btn__content) {
+  justify-content: flex-start;
+  max-width: 200px;
 }
 </style>
 
