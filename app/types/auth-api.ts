@@ -2,7 +2,8 @@ import type { ApiResponse } from '~/types/user-api';
 
 export type AuthUser = {
   id: number;
-  name: string;
+  userName: string;
+  nickName: string;
   discordId: string;
   avatar: string;
   description: string;

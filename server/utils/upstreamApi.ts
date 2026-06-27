@@ -81,21 +81,21 @@ const throwUpstreamError = (path: string, err: unknown): never => {
 
   throw createError({
     statusCode,
-    statusMessage: message || undefined,
+    message: message || undefined,
     data: e.data,
   });
 };
 
 const callUpstream = async <T>(opts: {
   path: string;
-  method: 'GET' | 'POST';
+  method: 'GET' | 'POST' | 'PUT';
   query?: QueryObject;
   body?: unknown;
   event?: H3Event;
 }): Promise<T> => {
   const { baseURL, token } = getUpstreamAuth();
   const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
-  if (opts.method === 'POST') headers['Content-Type'] = 'application/json';
+  if (opts.method === 'POST' || opts.method === 'PUT') headers['Content-Type'] = 'application/json';
   if (opts.event) {
     const cookie = getRequestHeader(opts.event, 'cookie');
     if (cookie) headers.Cookie = cookie;
@@ -140,3 +140,7 @@ export const fetchUpstreamApi = <T>(
 /** POST：body 轉發 kurohelper-api。傳 event 時會轉發 Cookie / Set-Cookie（登入 session 用）。 */
 export const postUpstreamApi = <T>(path: string, body: unknown, event?: H3Event): Promise<T> =>
   callUpstream<T>({ path, method: 'POST', body, event });
+
+/** PUT：body 轉發 kurohelper-api。傳 event 時會轉發 Cookie / Set-Cookie（登入 session 用）。 */
+export const putUpstreamApi = <T>(path: string, body: unknown, event?: H3Event): Promise<T> =>
+  callUpstream<T>({ path, method: 'PUT', body, event });
