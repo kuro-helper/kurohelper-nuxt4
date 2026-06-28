@@ -100,22 +100,8 @@ import type {
   UserProfileDto,
 } from '~/types/user-api';
 
-const route = useRoute();
-const idParam = computed(() =>
-  typeof route.params.id === 'string' ? route.params.id : (route.params.id?.[0] ?? ''),
-);
-
-const { user: authUser, refresh: refreshAuth } = useAuth();
-await refreshAuth();
-watch(idParam, () => {
-  refreshAuth();
-});
-
-const canEditProfile = computed(() => {
-  const me = authUser.value;
-  if (!me) return false;
-  return String(me.id) === idParam.value;
-});
+const { idParam, authUser, refreshAuth, syncAuth, canEditProfile } = useUserProfileAccess();
+await syncAuth();
 
 const emptyApiResponse = <T,>(data: T): ApiResponse<T> => ({
   message: '',

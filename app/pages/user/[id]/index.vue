@@ -149,7 +149,8 @@
                         rounded="xl"
                         variant="outlined"
                         class="game-card d-flex flex-column"
-                        :class="{ 'game-card--done': isDone(ug) }"
+                        :class="{ 'game-card--status': !!userGameStatusColor(ug.status) }"
+                        :style="userGameStatusThemeStyle(ug.status)"
                       >
                         <v-img
                           :src="gameImage(ug)"
@@ -177,10 +178,10 @@
                               </v-chip>
                               <v-chip
                                 size="small"
-                                :color="isDone(ug) ? 'success' : 'secondary'"
+                                :color="userGameStatusColor(ug.status)"
                                 variant="tonal"
                               >
-                                {{ statusLabel(ug) }}
+                                {{ userGameStatusLabel(ug.status) }}
                               </v-chip>
                             </div>
                           </v-card-subtitle>
@@ -289,10 +290,10 @@
                       <td>
                         <v-chip
                           size="small"
-                          :color="isDone(ug) ? 'success' : 'secondary'"
+                          :color="userGameStatusColor(ug.status)"
                           variant="tonal"
                         >
-                          {{ statusLabel(ug) }}
+                          {{ userGameStatusLabel(ug.status) }}
                         </v-chip>
                       </td>
                       <td class="text-caption">{{ fmtLocalDate(ug.startDate) }}</td>
@@ -406,6 +407,13 @@
 import { formatISO, isAfter } from 'date-fns';
 import { authErrorMessage } from '~/composables/useAuth';
 import { apiErrorUserMessage, logApiError } from '~/utils/apiError';
+import {
+  USER_GAME_STATUS,
+  USER_GAME_STATUS_OPTIONS,
+  userGameStatusColor,
+  userGameStatusLabel,
+  userGameStatusThemeStyle,
+} from '~/utils/userGameStatus';
 import { useDisplay } from 'vuetify';
 import type {
   ApiResponse,
@@ -740,14 +748,6 @@ function gameMarks(ug: UserGameDto) {
   return marks.join(' ');
 }
 
-function isDone(ug: UserGameDto) {
-  return ug.status === 'finished';
-}
-
-function statusLabel(ug: UserGameDto) {
-  return ug.status === 'finished' ? '遊玩完畢' : ug.status;
-}
-
 function fmtLocalDate(input?: string | null) {
   if (!input || input === '—') return '—';
   const trimmed = input.trim();
@@ -928,9 +928,9 @@ function fmtLocalDate(input?: string | null) {
   transform: translateY(-2px);
 }
 
-.game-card--done {
-  border-color: rgba(var(--v-theme-success), 0.55) !important;
-  background: rgba(var(--v-theme-success), 0.1);
+.game-card--status {
+  border-color: rgba(var(--status-rgb), 0.55) !important;
+  background: rgba(var(--status-rgb), 0.1);
 }
 
 .game-title {
@@ -964,14 +964,9 @@ function fmtLocalDate(input?: string | null) {
 .game-name-cell__title {
   min-width: 0;
   flex: 1 1 auto;
-  max-width: 20rem;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-}
-
-.game-name-cell__id {
-  flex-shrink: 0;
 }
 
 .game-meta {
@@ -1002,5 +997,21 @@ function fmtLocalDate(input?: string | null) {
 .empty-state,
 .games-error-state {
   border-style: dashed;
+}
+
+.game-edit-title {
+  word-break: break-word;
+}
+</style>
+
+<style>
+.game-edit-dialog-card.v-card {
+  background-color: rgb(var(--v-theme-surface)) !important;
+  border: 1px solid rgb(var(--v-theme-outline));
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45) !important;
+}
+
+.v-theme--light .game-edit-dialog-card.v-card {
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18) !important;
 }
 </style>
