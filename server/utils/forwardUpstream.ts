@@ -5,14 +5,6 @@ import { fetchUpstreamApi } from './upstreamApi';
 export const forwardGet = <T>(upstreamPath: string) =>
   defineEventHandler((event): Promise<T> => fetchUpstreamApi<T>(upstreamPath, getQuery(event)));
 
-export const forwardRegisterLookup = <T>(upstreamPath: string) =>
-  defineEventHandler(
-    (event): Promise<T> =>
-      fetchUpstreamApi<T>(upstreamPath, {
-        registerId: String(getRouterParam(event, 'id') ?? '').trim(),
-      }),
-  );
-
 export const forwardGetByRouterParam = <T>(
   buildUpstreamPath: (param: string) => string,
   paramName = 'id',

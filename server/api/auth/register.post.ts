@@ -6,5 +6,5 @@ import { postUpstreamApi } from '../../utils/upstreamApi';
 export default defineEventHandler(async (event): Promise<ApiResponse<unknown>> => {
   const parsed = await readJsonBody(event);
   if (!parsed.ok) return { message: parsed.message, data: null };
-  return postUpstreamApi<ApiResponse<unknown>>('/api/user/register', parsed.value);
+  return postUpstreamApi<ApiResponse<unknown>>('/api/auth/register', parsed.value);
 });
