@@ -34,7 +34,7 @@ export type UserGameErogsDto = {
 export type UserGameDto = {
   userId: number;
   gameErogsId: number;
-  status: string;
+  status: number;
   wishListMark: boolean;
   blackListMark: boolean;
   startDate?: string | null;
@@ -65,6 +65,14 @@ export type UpdateUserBody = {
   nickName: string;
   description: string;
   avatar: string;
+};
+
+export type UpdateUserGameBody = {
+  status: number;
+  wishListMark: boolean;
+  blackListMark: boolean;
+  startDate: string | null;
+  finishedDate: string | null;
 };
 
 export type ApiErrorResponse = {

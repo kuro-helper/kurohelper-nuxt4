@@ -1,6 +1,6 @@
 <template>
   <div class="d-flex flex-column align-center w-100">
-    <v-card class="mx-auto w-100 mt-6 mt-md-12" max-width="760">
+    <v-card class="mx-auto w-100 mt-6 mt-md-12" max-width="960">
       <v-card-text class="pa-4 pa-md-8">
         <div class="text-subtitle-1 mb-4 font-weight-semibold">輸入關鍵字開始查詢</div>
 

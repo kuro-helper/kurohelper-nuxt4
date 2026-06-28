@@ -25,6 +25,7 @@ export default defineNuxtConfig({
   },
   vuetify: {
     vuetifyOptions: {
+      labComponents: ['VDateInput'],
       theme: {
         defaultTheme: 'dark',
         themes: {
@@ -112,7 +113,18 @@ export default defineNuxtConfig({
           rounded: 'lg',
           density: 'comfortable',
         },
+        VDateInput: {
+          variant: 'outlined',
+          rounded: 'lg',
+          density: 'comfortable',
+          prependInnerIcon: 'mdi-calendar',
+        },
       },
+    },
+  },
+  vite: {
+    optimizeDeps: {
+      include: ['@vue/devtools-core', '@vue/devtools-kit'],
     },
   },
 });

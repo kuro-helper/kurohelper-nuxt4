@@ -25,6 +25,31 @@ body,
   background: transparent !important;
 }
 
+/* 全站 v-container 內容區加寬（Vuetify 4 預設 lg 約 1000px） */
+@media (min-width: 840px) {
+  .v-application .v-main .v-container {
+    max-width: 900px;
+  }
+}
+
+@media (min-width: 1145px) {
+  .v-application .v-main .v-container {
+    max-width: 1200px;
+  }
+}
+
+@media (min-width: 1545px) {
+  .v-application .v-main .v-container {
+    max-width: 1600px;
+  }
+}
+
+@media (min-width: 2138px) {
+  .v-application .v-main .v-container {
+    max-width: 2200px;
+  }
+}
+
 .v-tabs .v-slide-group__content .v-tab__slider {
   height: 3px;
   border-radius: 999px;
