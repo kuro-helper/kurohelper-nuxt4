@@ -170,6 +170,7 @@ const navItems = [
   { to: '/', label: '首頁', icon: 'mdi-home-outline' },
   { to: '/game/1001', label: '遊戲詳情', icon: 'mdi-gamepad-variant-outline' },
   { to: '/user', label: '使用者', icon: 'mdi-account-outline' },
+  { to: '/register', label: '註冊', icon: 'mdi-account-plus-outline' },
 ] as const;
 
 const isNavActive = (to: string) => {
