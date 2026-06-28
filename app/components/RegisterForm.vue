@@ -3,13 +3,13 @@
     <v-card rounded="xl" variant="outlined">
       <v-card-text class="pa-6">
         <div class="mb-4">
-          <h2 class="text-h5 font-weight-bold">申辦帳號</h2>
-          <p class="text-body-2 text-medium-emphasis mt-1">邀請 ID：{{ invitationId }}</p>
+          <h2 class="text-h5 font-weight-bold">註冊帳號</h2>
+          <p class="text-body-2 text-medium-emphasis mt-1">註冊連結 ID：{{ invitationId }}</p>
         </div>
 
         <div v-if="lookupState.status === 'loading'" class="d-flex align-center ga-2 py-2">
           <v-progress-circular indeterminate size="18" width="2" />
-          <span class="text-body-2 text-medium-emphasis">正在驗證邀請資料...</span>
+          <span class="text-body-2 text-medium-emphasis">正在驗證註冊連結...</span>
         </div>
 
         <v-alert
@@ -18,7 +18,7 @@
           variant="tonal"
           class="my-2"
         >
-          找不到對應的邀請 ID，請確認連結是否正確。
+          找不到對應的註冊連結，請確認連結是否正確或是否已過期。
         </v-alert>
 
         <template v-else-if="lookupState.status === 'ready'">
@@ -63,7 +63,7 @@
                 required
                 @blur="deferTouch('confirmPassword')"
               />
-              <v-btn color="primary" block type="submit" size="large">送出申辦</v-btn>
+              <v-btn color="primary" block type="submit" size="large">完成註冊</v-btn>
             </div>
           </form>
         </template>
@@ -182,7 +182,7 @@ const goSubmitInfo = (variant: 'success' | 'error', message: string) => {
 
 const handleCredentialSubmit = async () => {
   if (lookupState.value.status !== 'ready') {
-    goSubmitInfo('error', '邀請資料尚未完成驗證，請稍後再試。');
+    goSubmitInfo('error', '註冊連結尚未完成驗證，請稍後再試。');
     return;
   }
   const v = validateCredentials();
