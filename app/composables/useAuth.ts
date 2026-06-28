@@ -32,7 +32,15 @@ export const useAuth = () => {
     user.value = u;
   };
 
-  return { user, isLoggedIn, refresh, login };
+  const logout = async () => {
+    try {
+      await $fetch('/api/auth/logout', { method: 'POST' });
+    } finally {
+      user.value = null;
+    }
+  };
+
+  return { user, isLoggedIn, refresh, login, logout };
 };
 
 export const authErrorMessage = (err: unknown, fallback = '登入失敗，請稍後再試') => {

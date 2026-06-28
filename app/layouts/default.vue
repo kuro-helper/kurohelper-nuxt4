@@ -2,7 +2,7 @@
   <div>
     <NavBar />
 
-    <div style="height: 64px" />
+    <div class="layout-nav-spacer" />
 
     <v-main>
       <slot />
@@ -10,3 +10,9 @@
     </v-main>
   </div>
 </template>
+
+<style scoped>
+.layout-nav-spacer {
+  height: 56px;
+}
+</style>

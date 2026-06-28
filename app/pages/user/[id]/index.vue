@@ -45,6 +45,7 @@
                     Discord：{{ user.discordId }}
                   </v-chip>
                   <v-chip v-else color="error" variant="tonal" label>尚未綁定 Discord</v-chip>
+                  <UserRoleChip :role="user.role" />
                 </div>
               </div>
             </div>
@@ -76,7 +77,7 @@
 
           <div class="d-flex align-center justify-space-between flex-wrap ga-2 mb-4">
             <div class="text-h5 font-weight-bold">遊戲紀錄（UserGame）</div>
-            <div class="d-flex align-center flex-wrap ga-2">
+            <div v-if="!showPrivateGamesLock" class="d-flex align-center flex-wrap ga-2">
               <v-chip size="small" variant="tonal" color="primary"
                 >{{ userGames.length }} 筆</v-chip
               >
@@ -121,195 +122,213 @@
           </div>
 
           <v-sheet
-            v-if="userGames.length === 0"
+            v-if="showPrivateGamesLock"
             rounded="xl"
             border
             color="surface-variant"
-            class="empty-state pa-8 text-center"
+            class="private-games-state pa-10 text-center"
           >
-            <v-img :src="PLACEHOLDER_IMAGE_URL" alt="" max-width="120" class="mx-auto mb-4" />
-            <p class="text-body-2 text-medium-emphasis mb-0">尚無關聯遊戲資料。</p>
+            <v-icon size="56" color="medium-emphasis" class="mb-4">mdi-lock-outline</v-icon>
+            <p class="text-body-1 font-weight-medium mb-2">此使用者的遊戲資料已設為私人</p>
+            <p class="text-body-2 text-medium-emphasis mb-0">
+              該使用者已將個人建檔資料設為不公開，無法查看遊戲紀錄。
+            </p>
           </v-sheet>
 
-          <div v-else class="game-view-stack">
-            <Transition :name="slideName">
-              <div v-show="gameViewMode === 'card'" class="game-view-layer">
-                <v-window v-model="gamePage" class="carousel-window" :touch="false">
-                  <v-window-item
-                    v-for="(page, pageIndex) in gamePages"
-                    :key="`game-page-${pageIndex}`"
-                  >
-                    <div
-                      class="game-grid"
-                      :style="{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }"
+          <template v-else>
+            <v-sheet
+              v-if="userGames.length === 0 && !gamesPending"
+              rounded="xl"
+              border
+              color="surface-variant"
+              class="empty-state pa-8 text-center"
+            >
+              <v-img :src="PLACEHOLDER_IMAGE_URL" alt="" max-width="120" class="mx-auto mb-4" />
+              <p class="text-body-2 text-medium-emphasis mb-0">尚無關聯遊戲資料。</p>
+            </v-sheet>
+
+            <div v-else class="game-view-stack">
+              <Transition :name="slideName">
+                <div v-show="gameViewMode === 'card'" class="game-view-layer">
+                  <v-window v-model="gamePage" class="carousel-window" :touch="false">
+                    <v-window-item
+                      v-for="(page, pageIndex) in gamePages"
+                      :key="`game-page-${pageIndex}`"
                     >
-                      <v-card
-                        v-for="(ug, idx) in page"
-                        :key="`${ug.gameErogsId}-${pageIndex}-${idx}`"
-                        rounded="xl"
-                        variant="outlined"
-                        class="game-card d-flex flex-column"
-                        :class="{ 'game-card--status': !!userGameStatusColor(ug.status) }"
-                        :style="userGameStatusThemeStyle(ug.status)"
+                      <div
+                        class="game-grid"
+                        :style="{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }"
                       >
-                        <v-img
-                          :src="gameImage(ug)"
-                          height="140"
-                          cover
-                          class="flex-shrink-0 game-card-img"
-                          :eager="pageIndex === 0 && idx < 8"
+                        <v-card
+                          v-for="(ug, idx) in page"
+                          :key="`${ug.gameErogsId}-${pageIndex}-${idx}`"
+                          rounded="xl"
+                          variant="outlined"
+                          class="game-card d-flex flex-column"
+                          :class="{ 'game-card--status': !!userGameStatusColor(ug.status) }"
+                          :style="userGameStatusThemeStyle(ug.status)"
                         >
-                          <template #placeholder>
-                            <div class="fill-height game-img-placeholder" />
-                          </template>
-                        </v-img>
-
-                        <v-card-item class="pb-2">
-                          <v-card-title
-                            :title="gameTitle(ug)"
-                            class="game-title text-subtitle-1 font-weight-bold pa-0"
+                          <v-img
+                            :src="gameImage(ug)"
+                            height="140"
+                            cover
+                            class="flex-shrink-0 game-card-img"
+                            :eager="pageIndex === 0 && idx < 8"
                           >
-                            <span class="game-title-text">{{ gameTitle(ug) }}</span>
-                          </v-card-title>
-                          <v-card-subtitle class="pa-0 mt-2">
-                            <div class="d-flex flex-wrap ga-2">
-                              <v-chip size="small" variant="tonal" color="info">
-                                ID：{{ ug.gameErogsId }}
-                              </v-chip>
-                              <v-chip
-                                size="small"
-                                :color="userGameStatusColor(ug.status)"
-                                variant="tonal"
-                              >
-                                {{ userGameStatusLabel(ug.status) }}
-                              </v-chip>
-                            </div>
-                          </v-card-subtitle>
-                        </v-card-item>
+                            <template #placeholder>
+                              <div class="fill-height game-img-placeholder" />
+                            </template>
+                          </v-img>
 
-                        <v-card-text class="pt-0 mt-auto">
-                          <div class="game-meta">
-                            <div class="game-meta-row">
-                              <span class="game-meta-label">開始時間</span>
-                              <span class="game-meta-value">{{ fmtLocalDate(ug.startDate) }}</span>
+                          <v-card-item class="pb-2">
+                            <v-card-title
+                              :title="gameTitle(ug)"
+                              class="game-title text-subtitle-1 font-weight-bold pa-0"
+                            >
+                              <span class="game-title-text">{{ gameTitle(ug) }}</span>
+                            </v-card-title>
+                            <v-card-subtitle class="pa-0 mt-2">
+                              <div class="d-flex flex-wrap ga-2">
+                                <v-chip size="small" variant="tonal" color="info">
+                                  ID：{{ ug.gameErogsId }}
+                                </v-chip>
+                                <v-chip
+                                  size="small"
+                                  :color="userGameStatusColor(ug.status)"
+                                  variant="tonal"
+                                >
+                                  {{ userGameStatusLabel(ug.status) }}
+                                </v-chip>
+                              </div>
+                            </v-card-subtitle>
+                          </v-card-item>
+
+                          <v-card-text class="pt-0 mt-auto">
+                            <div class="game-meta">
+                              <div class="game-meta-row">
+                                <span class="game-meta-label">開始時間</span>
+                                <span class="game-meta-value">{{
+                                  fmtLocalDate(ug.startDate)
+                                }}</span>
+                              </div>
+                              <div class="game-meta-row">
+                                <span class="game-meta-label">結束時間</span>
+                                <span class="game-meta-value">{{
+                                  fmtLocalDate(ug.finishedDate)
+                                }}</span>
+                              </div>
+                              <div class="game-meta-row">
+                                <span class="game-meta-label">建立</span>
+                                <span class="game-meta-value text-medium-emphasis">{{
+                                  fmtLocalDate(ug.createdAt)
+                                }}</span>
+                              </div>
+                              <div class="game-meta-row">
+                                <span class="game-meta-label">更新</span>
+                                <span class="game-meta-value text-medium-emphasis">{{
+                                  fmtLocalDate(ug.updatedAt)
+                                }}</span>
+                              </div>
                             </div>
-                            <div class="game-meta-row">
-                              <span class="game-meta-label">結束時間</span>
-                              <span class="game-meta-value">{{
-                                fmtLocalDate(ug.finishedDate)
-                              }}</span>
-                            </div>
-                            <div class="game-meta-row">
-                              <span class="game-meta-label">建立</span>
-                              <span class="game-meta-value text-medium-emphasis">{{
-                                fmtLocalDate(ug.createdAt)
-                              }}</span>
-                            </div>
-                            <div class="game-meta-row">
-                              <span class="game-meta-label">更新</span>
-                              <span class="game-meta-value text-medium-emphasis">{{
-                                fmtLocalDate(ug.updatedAt)
-                              }}</span>
-                            </div>
-                          </div>
-                        </v-card-text>
-                      </v-card>
+                          </v-card-text>
+                        </v-card>
+                      </div>
+                    </v-window-item>
+                  </v-window>
+                </div>
+              </Transition>
+
+              <Transition :name="slideName">
+                <div
+                  v-if="tableReady"
+                  v-show="gameViewMode === 'table'"
+                  class="game-table-panel game-view-layer"
+                >
+                  <Transition :name="slideName">
+                    <div v-if="canEditProfile" class="table-edit-action d-flex justify-end mb-3">
+                      <v-btn
+                        :color="tableEditUnlocked ? 'primary' : undefined"
+                        variant="tonal"
+                        class="text-none table-edit-btn"
+                        @click="toggleTableEdit"
+                      >
+                        <v-icon start>
+                          {{ tableEditUnlocked ? 'mdi-lock-open-variant' : 'mdi-lock' }}
+                        </v-icon>
+                        修改
+                      </v-btn>
                     </div>
-                  </v-window-item>
-                </v-window>
-              </div>
-            </Transition>
+                  </Transition>
 
-            <Transition :name="slideName">
-              <div
-                v-if="tableReady"
-                v-show="gameViewMode === 'table'"
-                class="game-table-panel game-view-layer"
-              >
-                <Transition :name="slideName">
-                  <div v-if="canEditProfile" class="table-edit-action d-flex justify-end mb-3">
-                    <v-btn
-                      :color="tableEditUnlocked ? 'primary' : undefined"
-                      variant="tonal"
-                      class="text-none table-edit-btn"
-                      @click="toggleTableEdit"
-                    >
-                      <v-icon start>
-                        {{ tableEditUnlocked ? 'mdi-lock-open-variant' : 'mdi-lock' }}
-                      </v-icon>
-                      修改
-                    </v-btn>
-                  </div>
-                </Transition>
-
-                <v-table density="comfortable" class="rounded border bg-surface game-table">
-                  <thead>
-                    <tr>
-                      <th class="text-start">遊戲名稱</th>
-                      <th class="text-start">狀態</th>
-                      <th v-for="col in tableDateSortColumns" :key="col.key" class="text-start">
-                        <button
-                          type="button"
-                          class="game-table-sort-btn"
-                          @click="toggleTableSort(col.key)"
-                        >
-                          <span>{{ col.label }}</span>
-                          <v-icon
-                            size="14"
-                            class="game-table-sort-icon"
-                            :class="{
-                              'game-table-sort-icon--active': tableSortKey === col.key,
-                              'game-table-sort-icon--asc':
-                                tableSortKey === col.key && tableSortDir === 'asc',
-                            }"
+                  <v-table density="comfortable" class="rounded border bg-surface game-table">
+                    <thead>
+                      <tr>
+                        <th class="text-start">遊戲名稱</th>
+                        <th class="text-start">狀態</th>
+                        <th v-for="col in tableDateSortColumns" :key="col.key" class="text-start">
+                          <button
+                            type="button"
+                            class="game-table-sort-btn"
+                            @click="toggleTableSort(col.key)"
                           >
-                            mdi-menu-down
-                          </v-icon>
-                        </button>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr
-                      v-for="(ug, idx) in tableUserGames"
-                      :key="`table-${ug.gameErogsId}-${idx}`"
-                      class="game-table-row"
-                      :class="{ 'game-table-row--clickable': tableEditUnlocked }"
-                      @click="onTableRowClick(ug)"
-                    >
-                      <td class="game-name-td">
-                        <div class="game-name-cell">
-                          <span v-if="gameMarks(ug)" class="game-name-cell__marks">{{
-                            gameMarks(ug)
-                          }}</span>
-                          <span class="game-name-cell__title" :title="gameTitle(ug)">{{
-                            gameTitle(ug)
-                          }}</span>
-                        </div>
-                      </td>
-                      <td>
-                        <v-chip
-                          size="small"
-                          :color="userGameStatusColor(ug.status)"
-                          variant="tonal"
-                        >
-                          {{ userGameStatusLabel(ug.status) }}
-                        </v-chip>
-                      </td>
-                      <td class="text-caption">{{ fmtLocalDate(ug.startDate) }}</td>
-                      <td class="text-caption">{{ fmtLocalDate(ug.finishedDate) }}</td>
-                      <td class="text-caption text-medium-emphasis">
-                        {{ fmtLocalDate(ug.createdAt) }}
-                      </td>
-                      <td class="text-caption text-medium-emphasis">
-                        {{ fmtLocalDate(ug.updatedAt) }}
-                      </td>
-                    </tr>
-                  </tbody>
-                </v-table>
-              </div>
-            </Transition>
-          </div>
+                            <span>{{ col.label }}</span>
+                            <v-icon
+                              size="14"
+                              class="game-table-sort-icon"
+                              :class="{
+                                'game-table-sort-icon--active': tableSortKey === col.key,
+                                'game-table-sort-icon--asc':
+                                  tableSortKey === col.key && tableSortDir === 'asc',
+                              }"
+                            >
+                              mdi-menu-down
+                            </v-icon>
+                          </button>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr
+                        v-for="(ug, idx) in tableUserGames"
+                        :key="`table-${ug.gameErogsId}-${idx}`"
+                        class="game-table-row"
+                        :class="{ 'game-table-row--clickable': tableEditUnlocked }"
+                        @click="onTableRowClick(ug)"
+                      >
+                        <td class="game-name-td">
+                          <div class="game-name-cell">
+                            <span v-if="gameMarks(ug)" class="game-name-cell__marks">{{
+                              gameMarks(ug)
+                            }}</span>
+                            <span class="game-name-cell__title" :title="gameTitle(ug)">{{
+                              gameTitle(ug)
+                            }}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <v-chip
+                            size="small"
+                            :color="userGameStatusColor(ug.status)"
+                            variant="tonal"
+                          >
+                            {{ userGameStatusLabel(ug.status) }}
+                          </v-chip>
+                        </td>
+                        <td class="text-caption">{{ fmtLocalDate(ug.startDate) }}</td>
+                        <td class="text-caption">{{ fmtLocalDate(ug.finishedDate) }}</td>
+                        <td class="text-caption text-medium-emphasis">
+                          {{ fmtLocalDate(ug.createdAt) }}
+                        </td>
+                        <td class="text-caption text-medium-emphasis">
+                          {{ fmtLocalDate(ug.updatedAt) }}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </v-table>
+                </div>
+              </Transition>
+            </div>
+          </template>
         </template>
       </v-card-text>
     </v-card>
@@ -612,7 +631,7 @@ watch(gameEditModalOpen, (open) => {
   }
 });
 
-const { idParam, syncAuth, canEditProfile } = useUserProfileAccess();
+const { idParam, authUser, syncAuth, canEditProfile } = useUserProfileAccess();
 await syncAuth();
 
 const emptyApiResponse = <T,>(data: T): ApiResponse<T> => ({
@@ -629,7 +648,8 @@ const {
 } = useFetch<ApiResponse<GetUserGameDto>, FetchErrorLike>(
   () => `/api/user/${encodeURIComponent(idParam.value)}/game`,
   {
-    watch: [idParam],
+    watch: [idParam, () => authUser.value?.id],
+    server: false,
     default: () =>
       emptyApiResponse<GetUserGameDto>({
         user: {
@@ -638,6 +658,7 @@ const {
           discordId: '',
           avatar: '',
           description: '',
+          privateGameData: false,
           role: 0,
           createdAt: '',
           updatedAt: '',
@@ -721,10 +742,14 @@ const user = computed(() => {
     discordId: profile?.discordId?.trim() || '',
     avatar: profile?.avatar?.trim() || '',
     description: profile?.description?.trim() || '',
+    privateGameData: profile?.privateGameData ?? false,
+    role: profile?.role ?? 0,
     createdAt: profile?.createdAt || '—',
     updatedAt: profile?.updatedAt || '—',
   };
 });
+
+const showPrivateGamesLock = computed(() => user.value.privateGameData && !canEditProfile.value);
 
 const initials = computed(() => {
   const n = user.value.nickName.trim();

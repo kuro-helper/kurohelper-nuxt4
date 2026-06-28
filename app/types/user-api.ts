@@ -7,6 +7,8 @@ export type UserItem = {
   id: number;
   nickName: string;
   discordId: string;
+  avatar: string;
+  privateGameData: boolean;
   role: number;
   createdAt: string;
   updatedAt: string;
@@ -51,6 +53,7 @@ export type UserProfileDto = {
   discordId: string;
   avatar: string;
   description: string;
+  privateGameData: boolean;
   role: number;
   createdAt: string;
   updatedAt: string;
@@ -65,6 +68,7 @@ export type UpdateUserBody = {
   nickName: string;
   description: string;
   avatar: string;
+  privateGameData: boolean;
 };
 
 export type UpdateUserGameBody = {

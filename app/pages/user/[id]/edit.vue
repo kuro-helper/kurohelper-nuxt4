@@ -69,6 +69,18 @@
           hide-details="auto"
         />
 
+        <v-sheet rounded="lg" border color="surface-variant" class="pa-4">
+          <v-switch
+            v-model="form.privateGameData"
+            color="primary"
+            hide-details
+            :label="form.privateGameData ? '已啟用：隱藏個人建檔資料' : '已關閉：公開個人建檔資料'"
+          />
+          <p class="text-body-2 text-medium-emphasis mb-0 mt-1">
+            啟用後，其他使用者將無法查看你的遊戲建檔紀錄。
+          </p>
+        </v-sheet>
+
         <v-btn
           color="primary"
           type="submit"
@@ -117,7 +129,8 @@ const {
 } = useFetch<ApiResponse<GetUserGameDto>, FetchErrorLike>(
   () => `/api/user/${encodeURIComponent(idParam.value)}/game`,
   {
-    watch: [idParam],
+    watch: [idParam, () => authUser.value?.id],
+    server: false,
     immediate: false,
     default: () =>
       emptyApiResponse<GetUserGameDto>({
@@ -127,6 +140,7 @@ const {
           discordId: '',
           avatar: '',
           description: '',
+          privateGameData: false,
           role: 0,
           createdAt: '',
           updatedAt: '',
@@ -157,6 +171,7 @@ const form = reactive({
   nickName: '',
   description: '',
   avatar: '',
+  privateGameData: false,
 });
 
 const submitting = ref(false);
@@ -171,6 +186,7 @@ watch(
     form.nickName = profile.nickName?.trim() ?? '';
     form.description = profile.description?.trim() ?? '';
     form.avatar = profile.avatar?.trim() ?? '';
+    form.privateGameData = profile.privateGameData ?? false;
   },
   { immediate: true },
 );
@@ -209,6 +225,7 @@ const onSubmit = async () => {
       nickName,
       description: form.description.trim(),
       avatar,
+      privateGameData: form.privateGameData,
     };
 
     await $fetch<ApiResponse<UserProfileDto>>(`/api/user/${encodeURIComponent(idParam.value)}`, {

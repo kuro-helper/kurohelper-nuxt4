@@ -37,7 +37,9 @@ export const lookupRegisterInvite = async (invitationId: string): Promise<Regist
   const id = invitationId.trim();
   if (!id) return { found: false };
   try {
-    const res = await fetch(`/api/register/${encodeURIComponent(id)}`, { cache: 'no-store' });
+    const res = await fetch(`/api/auth/register-link?registerId=${encodeURIComponent(id)}`, {
+      cache: 'no-store',
+    });
     if (!res.ok) return { found: false };
     const json = (await res.json()) as ApiEnvelope<{ discordId: string }>;
     const discordId = json.data?.discordId;
