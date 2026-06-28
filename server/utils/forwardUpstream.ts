@@ -19,5 +19,5 @@ export const forwardGetByRouterParam = <T>(
 ) =>
   defineEventHandler((event): Promise<T> => {
     const param = String(getRouterParam(event, paramName) ?? '').trim();
-    return fetchUpstreamApi<T>(buildUpstreamPath(param), {});
+    return fetchUpstreamApi<T>(buildUpstreamPath(param), {}, event);
   });
