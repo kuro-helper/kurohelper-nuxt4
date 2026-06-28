@@ -1,78 +1,101 @@
 <template>
   <div>
-    <v-app-bar
-      class="app-bar-glass"
-      elevation="0"
-      fixed
-      height="64"
-      color="transparent"
-      :style="{ borderBottom: '1px solid rgb(var(--v-theme-outline))' }"
-    >
-      <v-toolbar density="compact" flat color="transparent" class="px-2">
+    <v-app-bar class="app-bar" elevation="0" fixed height="56" flat>
+      <div class="app-bar__inner">
         <v-btn
           icon
           variant="text"
-          aria-label="menu"
-          size="small"
-          class="mr-2"
+          aria-label="開啟選單"
+          class="d-md-none app-bar__menu-btn"
           @click="drawer = true"
         >
           <v-icon>mdi-menu</v-icon>
         </v-btn>
-        <nuxt-link
-          to="/"
-          class="text-h6 text-decoration-none"
-          style="color: inherit; font-weight: 700; letter-spacing: -0.01em"
-        >
-          KuroHelper
-        </nuxt-link>
+
+        <NuxtLink to="/" class="app-bar__brand">
+          <span class="app-bar__logo" aria-hidden="true">
+            <img class="app-bar__logo-img" src="/favicon.ico" alt="" />
+          </span>
+          <span class="app-bar__title">KuroHelper</span>
+        </NuxtLink>
+
+        <nav class="app-bar__nav d-none d-md-flex" aria-label="主要導覽">
+          <NuxtLink
+            v-for="item in navItems"
+            :key="item.to"
+            :to="item.to"
+            class="app-bar__nav-link"
+            :class="{ 'app-bar__nav-link--active': isNavActive(item.to) }"
+          >
+            {{ item.label }}
+          </NuxtLink>
+        </nav>
+
         <v-spacer />
-        <v-tooltip :text="isDark ? '切換淺色模式' : '切換深色模式'" location="bottom">
-          <template #activator="{ props }">
-            <v-btn
-              v-bind="props"
-              icon
-              variant="flat"
-              rounded="circle"
-              class="mr-2 theme-toggle-btn"
-              width="36"
-              height="36"
-              aria-label="切換淺色或深色主題"
-              @click="toggleTheme"
+
+        <div class="app-bar__actions">
+          <v-tooltip :text="isDark ? '切換淺色模式' : '切換深色模式'" location="bottom">
+            <template #activator="{ props: tooltipProps }">
+              <v-btn
+                v-bind="tooltipProps"
+                icon
+                variant="text"
+                size="small"
+                class="app-bar__theme-btn"
+                aria-label="切換淺色或深色主題"
+                @click="toggleTheme"
+              >
+                <v-icon size="20">
+                  {{ isDark ? 'mdi-white-balance-sunny' : 'mdi-weather-night' }}
+                </v-icon>
+              </v-btn>
+            </template>
+          </v-tooltip>
+
+          <NuxtLink v-if="isLoggedIn && user" :to="`/user/${user.id}`" class="app-bar__user">
+            <v-avatar size="30" class="app-bar__user-avatar">
+              <v-img v-if="user.avatar" :src="user.avatar" :alt="user.nickName" cover />
+              <span v-else class="text-caption font-weight-bold">{{ userInitials }}</span>
+            </v-avatar>
+            <UserIdentity
+              :nick-name="user.nickName"
+              :user-name="user.userName"
+              size="sm"
+              class="app-bar__user-text d-none d-sm-flex"
+            />
+            <v-icon size="18" class="app-bar__user-chevron d-none d-sm-inline"
+              >mdi-chevron-down</v-icon
             >
-              <v-icon size="small">
-                {{ isDark ? 'mdi-white-balance-sunny' : 'mdi-weather-night' }}
-              </v-icon>
-            </v-btn>
-          </template>
-        </v-tooltip>
-        <v-btn variant="text" class="text-none mr-1" height="48" to="/game/1001">遊戲頁展示</v-btn>
-        <v-btn
-          v-if="isLoggedIn && user"
-          variant="text"
-          class="text-none px-2 nav-user-btn"
-          height="48"
-          :to="`/user/${user.id}`"
-        >
-          <v-avatar size="32" class="mr-2 flex-shrink-0">
-            <v-img v-if="user.avatar" :src="user.avatar" :alt="user.nickName" cover />
-            <span v-else class="text-caption font-weight-bold">{{ userInitials }}</span>
-          </v-avatar>
-          <UserIdentity :nick-name="user.nickName" :user-name="user.userName" size="sm" />
-        </v-btn>
-        <v-btn v-else variant="text" class="text-none" height="48" @click="openLogin">登入</v-btn>
-      </v-toolbar>
+          </NuxtLink>
+
+          <v-btn
+            v-else
+            color="primary"
+            variant="flat"
+            size="small"
+            class="text-none app-bar__login-btn"
+            @click="openLogin"
+          >
+            登入
+          </v-btn>
+        </div>
+      </div>
     </v-app-bar>
 
-    <v-navigation-drawer v-model="drawer" temporary location="start" width="350">
-      <div class="pa-4 pb-2">
-        <div class="text-h6">KuroHelper</div>
-        <div class="text-body-2 text-medium-emphasis">快速導覽</div>
-      </div>
-      <v-divider />
-      <v-list density="compact" nav class="pa-2">
-        <v-list-item v-for="item in navItems" :key="item.to" :to="item.to" @click="drawer = false">
-          {{ item.label }}
+    <v-navigation-drawer v-model="drawer" temporary location="start" width="300" class="app-drawer">
+      <v-list density="comfortable" nav class="pa-3 pt-4">
+        <v-list-item
+          v-for="item in navItems"
+          :key="item.to"
+          :to="item.to"
+          rounded="lg"
+          :active="isNavActive(item.to)"
+          @click="drawer = false"
+        >
+          <template #prepend>
+            <v-icon :icon="item.icon" size="20" />
+          </template>
+          <v-list-item-title>{{ item.label }}</v-list-item-title>
         </v-list-item>
       </v-list>
     </v-navigation-drawer>
@@ -114,6 +137,7 @@
 </template>
 
 <script setup lang="ts">
+const route = useRoute();
 const { isDark, toggleTheme } = useAppTheme();
 const { user, isLoggedIn, login, refresh } = useAuth();
 
@@ -125,10 +149,15 @@ const loginLoading = ref(false);
 const loginError = ref('');
 
 const navItems = [
-  { to: '/', label: '首頁' },
-  { to: '/game/1001', label: '遊戲詳情範例' },
-  { to: '/user', label: '使用者資料' },
+  { to: '/', label: '首頁', icon: 'mdi-home-outline' },
+  { to: '/game/1001', label: '遊戲詳情', icon: 'mdi-gamepad-variant-outline' },
+  { to: '/user', label: '使用者', icon: 'mdi-account-outline' },
 ] as const;
+
+const isNavActive = (to: string) => {
+  if (to === '/') return route.path === '/';
+  return route.path === to || route.path.startsWith(`${to}/`);
+};
 
 const userInitials = computed(() => {
   const name = user.value?.nickName?.trim() || '';
@@ -167,20 +196,155 @@ const submitLogin = async () => {
 </script>
 
 <style scoped>
-.app-bar-glass {
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  background-color: rgba(var(--v-theme-surface), 0.58) !important;
+.app-bar {
+  backdrop-filter: blur(14px) saturate(1.15);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  background: rgba(var(--v-theme-surface), 0.78) !important;
+  border-bottom: 1px solid rgba(var(--v-theme-outline), 0.45);
 }
 
-.theme-toggle-btn.v-btn {
-  border-radius: 50% !important;
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.14) !important;
+.app-bar :deep(.v-toolbar__content) {
+  padding: 0;
+  height: 56px;
 }
 
-.nav-user-btn :deep(.v-btn__content) {
-  justify-content: flex-start;
-  max-width: 200px;
+.app-bar__inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 2200px;
+  margin: 0 auto;
+  padding: 0 12px;
+  min-height: 56px;
+}
+
+@media (min-width: 600px) {
+  .app-bar__inner {
+    padding: 0 20px;
+  }
+}
+
+.app-bar__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: inherit;
+  text-decoration: none;
+  flex-shrink: 0;
+  margin-right: 8px;
+}
+
+.app-bar__logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(var(--v-theme-primary), 0.72);
+  background: rgba(var(--v-theme-surface-variant), 0.5);
+  box-shadow:
+    0 0 0 1px rgba(var(--v-theme-primary), 0.28),
+    0 0 12px rgba(var(--v-theme-primary), 0.62),
+    0 0 22px rgba(var(--v-theme-primary), 0.42),
+    0 0 34px rgba(var(--v-theme-secondary), 0.48);
+}
+
+.app-bar__logo-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 10px;
+}
+
+.app-bar__title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.app-bar__nav {
+  align-items: center;
+  gap: 4px;
+  margin-left: 12px;
+}
+
+.app-bar__nav-link {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.72);
+  text-decoration: none;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.app-bar__nav-link:hover {
+  color: rgb(var(--v-theme-on-surface));
+  background: rgba(var(--v-theme-on-surface), 0.06);
+}
+
+.app-bar__nav-link--active {
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.14);
+}
+
+.app-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.app-bar__theme-btn {
+  opacity: 0.85;
+}
+
+.app-bar__user {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 220px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--v-theme-outline), 0.55);
+  background: rgba(var(--v-theme-surface-variant), 0.55);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.app-bar__user:hover {
+  border-color: rgba(var(--v-theme-primary), 0.45);
+  background: rgba(var(--v-theme-primary), 0.08);
+}
+
+.app-bar__user-avatar {
+  flex-shrink: 0;
+  border: 1px solid rgba(var(--v-theme-outline), 0.35);
+}
+
+.app-bar__user-text {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.app-bar__user-chevron {
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.app-bar__login-btn {
+  min-width: 72px;
 }
 </style>
 
