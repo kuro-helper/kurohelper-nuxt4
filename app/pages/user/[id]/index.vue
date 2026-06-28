@@ -225,19 +225,57 @@
                 v-show="gameViewMode === 'table'"
                 class="game-table-panel game-view-layer"
               >
-                <v-table density="comfortable" class="rounded border bg-surface">
+                <Transition :name="slideName">
+                  <div v-if="canEditProfile" class="table-edit-action d-flex justify-end mb-3">
+                    <v-btn
+                      :color="tableEditUnlocked ? 'primary' : undefined"
+                      variant="tonal"
+                      class="text-none table-edit-btn"
+                      @click="toggleTableEdit"
+                    >
+                      <v-icon start>
+                        {{ tableEditUnlocked ? 'mdi-lock-open-variant' : 'mdi-lock' }}
+                      </v-icon>
+                      修改
+                    </v-btn>
+                  </div>
+                </Transition>
+
+                <v-table density="comfortable" class="rounded border bg-surface game-table">
                   <thead>
                     <tr>
                       <th class="text-start">遊戲名稱</th>
                       <th class="text-start">狀態</th>
-                      <th class="text-start">開始時間</th>
-                      <th class="text-start">結束時間</th>
-                      <th class="text-start">建立</th>
-                      <th class="text-start">更新</th>
+                      <th v-for="col in tableDateSortColumns" :key="col.key" class="text-start">
+                        <button
+                          type="button"
+                          class="game-table-sort-btn"
+                          @click="toggleTableSort(col.key)"
+                        >
+                          <span>{{ col.label }}</span>
+                          <v-icon
+                            size="14"
+                            class="game-table-sort-icon"
+                            :class="{
+                              'game-table-sort-icon--active': tableSortKey === col.key,
+                              'game-table-sort-icon--asc':
+                                tableSortKey === col.key && tableSortDir === 'asc',
+                            }"
+                          >
+                            mdi-menu-down
+                          </v-icon>
+                        </button>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="(ug, idx) in userGames" :key="`table-${ug.gameErogsId}-${idx}`">
+                    <tr
+                      v-for="(ug, idx) in tableUserGames"
+                      :key="`table-${ug.gameErogsId}-${idx}`"
+                      class="game-table-row"
+                      :class="{ 'game-table-row--clickable': tableEditUnlocked }"
+                      @click="onTableRowClick(ug)"
+                    >
                       <td class="game-name-td">
                         <div class="game-name-cell">
                           <span v-if="gameMarks(ug)" class="game-name-cell__marks">{{
@@ -246,14 +284,6 @@
                           <span class="game-name-cell__title" :title="gameTitle(ug)">{{
                             gameTitle(ug)
                           }}</span>
-                          <v-chip
-                            size="small"
-                            variant="tonal"
-                            color="info"
-                            class="game-name-cell__id flex-shrink-0"
-                          >
-                            ID：{{ ug.gameErogsId }}
-                          </v-chip>
                         </div>
                       </td>
                       <td>
@@ -282,20 +312,187 @@
         </template>
       </v-card-text>
     </v-card>
+
+    <v-dialog v-model="gameEditModalOpen" max-width="520" opacity="0.58" scroll-strategy="block">
+      <v-card rounded="xl" variant="flat" color="surface" class="game-edit-dialog-card">
+        <v-card-title class="text-h6">修改遊戲紀錄</v-card-title>
+        <v-card-text v-if="tableEditGame">
+          <form class="d-flex flex-column ga-4" @submit.prevent="onGameEditSubmit">
+            <div>
+              <div class="text-caption text-medium-emphasis mb-2">遊戲</div>
+              <div class="d-flex align-center flex-wrap ga-2">
+                <span class="text-body-1 font-weight-medium game-edit-title">{{
+                  gameTitle(tableEditGame)
+                }}</span>
+                <v-chip size="small" variant="tonal" color="info" label>
+                  ID：{{ tableEditGame.gameErogsId }}
+                </v-chip>
+              </div>
+            </div>
+
+            <v-select
+              v-model="gameEditForm.status"
+              label="狀態"
+              :items="USER_GAME_STATUS_OPTIONS"
+              item-title="label"
+              item-value="value"
+              hide-details="auto"
+            />
+
+            <div class="d-flex flex-column ga-2">
+              <v-switch
+                v-model="gameEditForm.wishListMark"
+                label="願望清單"
+                color="primary"
+                hide-details
+                density="compact"
+              />
+              <v-switch
+                v-model="gameEditForm.blackListMark"
+                label="黑名單"
+                color="primary"
+                hide-details
+                density="compact"
+              />
+            </div>
+
+            <v-date-input
+              v-model="gameEditStartDate"
+              label="開始時間"
+              clearable
+              hide-details="auto"
+            />
+            <v-date-input
+              v-model="gameEditFinishedDate"
+              label="結束時間"
+              clearable
+              hide-details="auto"
+              :error-messages="gameEditDateRangeError"
+            />
+
+            <v-divider />
+
+            <div class="d-flex flex-wrap ga-2 text-caption text-medium-emphasis">
+              <span>建立：{{ fmtLocalDate(tableEditGame.createdAt) }}</span>
+              <span>更新：{{ fmtLocalDate(tableEditGame.updatedAt) }}</span>
+            </div>
+
+            <v-btn
+              color="primary"
+              type="submit"
+              size="large"
+              class="text-none align-self-end mt-2"
+              :loading="gameEditSubmitting"
+              :disabled="gameEditSubmitting || !!gameEditDateRangeError"
+            >
+              確定更新
+            </v-btn>
+          </form>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" class="text-none" @click="gameEditModalOpen = false">關閉</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-snackbar v-model="gameEditSnackbar" :color="gameEditSnackbarColor" :timeout="3000">
+      {{ gameEditSnackbarText }}
+    </v-snackbar>
   </v-container>
 </template>
 
 <script setup lang="ts">
+import { formatISO, isAfter } from 'date-fns';
+import { authErrorMessage } from '~/composables/useAuth';
 import { apiErrorUserMessage, logApiError } from '~/utils/apiError';
 import { useDisplay } from 'vuetify';
-import type { ApiResponse, FetchErrorLike, GetUserGameDto, UserGameDto } from '~/types/user-api';
+import type {
+  ApiResponse,
+  FetchErrorLike,
+  GetUserGameDto,
+  UpdateUserGameBody,
+  UserGameDto,
+} from '~/types/user-api';
 
 const PLACEHOLDER_IMAGE_URL = 'https://image.kurohelper.com/docs/neneGIF.gif';
 
 type GameViewMode = 'card' | 'table';
+type TableSortKey = 'startDate' | 'finishedDate' | 'createdAt' | 'updatedAt';
+type TableSortDir = 'asc' | 'desc';
+
+const tableDateSortColumns: { key: TableSortKey; label: string }[] = [
+  { key: 'startDate', label: '開始時間' },
+  { key: 'finishedDate', label: '結束時間' },
+  { key: 'createdAt', label: '建立' },
+  { key: 'updatedAt', label: '更新' },
+];
 
 const gameViewMode = ref<GameViewMode>('card');
 const tableReady = ref(false);
+const tableSortKey = ref<TableSortKey | null>(null);
+const tableSortDir = ref<TableSortDir>('desc');
+const tableEditUnlocked = ref(false);
+const gameEditModalOpen = ref(false);
+const tableEditGame = ref<UserGameDto | null>(null);
+const gameEditSnackbar = ref(false);
+const gameEditSnackbarText = ref('');
+const gameEditSnackbarColor = ref<'success' | 'info' | 'error'>('info');
+const gameEditSubmitting = ref(false);
+
+const emptyGameEditForm = (): UpdateUserGameBody => ({
+  status: USER_GAME_STATUS.NONE,
+  wishListMark: false,
+  blackListMark: false,
+  startDate: null,
+  finishedDate: null,
+});
+
+const gameEditForm = reactive<UpdateUserGameBody>(emptyGameEditForm());
+
+const dateAdapter = useDate();
+
+function bindIsoDateField(get: () => string | null, set: (value: string | null) => void) {
+  return computed({
+    get(): Date | null {
+      const raw = get()?.trim();
+      if (!raw || !/^\d{4}-\d{2}-\d{2}/.test(raw)) return null;
+      const date = dateAdapter.parseISO(raw.slice(0, 10)) as Date;
+      return dateAdapter.isValid(date) ? date : null;
+    },
+    set(value: Date | null) {
+      if (!value || !dateAdapter.isValid(value)) {
+        set(null);
+        return;
+      }
+      set(formatISO(value, { representation: 'complete' }));
+    },
+  });
+}
+
+const gameEditStartDate = bindIsoDateField(
+  () => gameEditForm.startDate,
+  (v) => {
+    gameEditForm.startDate = v;
+  },
+);
+const gameEditFinishedDate = bindIsoDateField(
+  () => gameEditForm.finishedDate,
+  (v) => {
+    gameEditForm.finishedDate = v;
+  },
+);
+
+const gameEditDateRangeError = computed(() => {
+  const startRaw = gameEditForm.startDate?.trim();
+  const endRaw = gameEditForm.finishedDate?.trim();
+  if (!startRaw || !endRaw) return '';
+  const start = new Date(startRaw);
+  const end = new Date(endRaw);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return '';
+  return isAfter(start, end) ? '開始時間不能超過結束時間' : '';
+});
+
 const gamePage = ref(0);
 const display = useDisplay();
 
@@ -317,24 +514,98 @@ const slideName = ref<'slide-next' | 'slide-prev'>('slide-next');
 watch(gameViewMode, (next, prev) => {
   slideName.value = VIEW_ORDER[next] >= VIEW_ORDER[prev] ? 'slide-next' : 'slide-prev';
   if (next === 'table') tableReady.value = true;
+  if (next !== 'table') {
+    tableEditUnlocked.value = false;
+    gameEditModalOpen.value = false;
+    tableEditGame.value = null;
+    tableSortKey.value = null;
+    tableSortDir.value = 'desc';
+  }
 });
 
-const route = useRoute();
-const idParam = computed(() =>
-  typeof route.params.id === 'string' ? route.params.id : (route.params.id?.[0] ?? ''),
-);
+function toggleTableSort(key: TableSortKey) {
+  if (tableSortKey.value === key) {
+    tableSortDir.value = tableSortDir.value === 'desc' ? 'asc' : 'desc';
+    return;
+  }
+  tableSortKey.value = key;
+  tableSortDir.value = 'desc';
+}
 
-const { user: authUser, refresh: refreshAuth } = useAuth();
-await refreshAuth();
-watch(idParam, () => {
-  refreshAuth();
+function closeGameEditModal() {
+  gameEditModalOpen.value = false;
+  tableEditGame.value = null;
+  Object.assign(gameEditForm, emptyGameEditForm());
+}
+
+function fillGameEditForm(ug: UserGameDto) {
+  gameEditForm.status = ug.status;
+  gameEditForm.wishListMark = ug.wishListMark;
+  gameEditForm.blackListMark = ug.blackListMark;
+  gameEditForm.startDate = ug.startDate ?? null;
+  gameEditForm.finishedDate = ug.finishedDate ?? null;
+}
+
+function showGameEditSnackbar(text: string, color: 'success' | 'info' | 'error' = 'info') {
+  gameEditSnackbarText.value = text;
+  gameEditSnackbarColor.value = color;
+  gameEditSnackbar.value = true;
+}
+
+function toggleTableEdit() {
+  tableEditUnlocked.value = !tableEditUnlocked.value;
+  if (!tableEditUnlocked.value) closeGameEditModal();
+}
+
+function onTableRowClick(ug: UserGameDto) {
+  if (!tableEditUnlocked.value) return;
+  tableEditGame.value = ug;
+  fillGameEditForm(ug);
+  gameEditModalOpen.value = true;
+}
+
+const onGameEditSubmit = async () => {
+  const game = tableEditGame.value;
+  if (!game) return;
+  if (gameEditDateRangeError.value) {
+    showGameEditSnackbar(gameEditDateRangeError.value, 'error');
+    return;
+  }
+
+  const body: UpdateUserGameBody = {
+    status: gameEditForm.status,
+    wishListMark: gameEditForm.wishListMark,
+    blackListMark: gameEditForm.blackListMark,
+    startDate: gameEditForm.startDate,
+    finishedDate: gameEditForm.finishedDate,
+  };
+
+  gameEditSubmitting.value = true;
+  try {
+    await $fetch<ApiResponse<UserGameDto>>(
+      `/api/user/${encodeURIComponent(idParam.value)}/game/${encodeURIComponent(String(game.gameErogsId))}`,
+      { method: 'PUT', body },
+    );
+    await refreshGames();
+    gameEditModalOpen.value = false;
+    showGameEditSnackbar('遊戲紀錄已更新', 'success');
+  } catch (err) {
+    logApiError(err);
+    showGameEditSnackbar(authErrorMessage(err, '更新失敗，請稍後再試'), 'error');
+  } finally {
+    gameEditSubmitting.value = false;
+  }
+};
+
+watch(gameEditModalOpen, (open) => {
+  if (!open) {
+    tableEditGame.value = null;
+    Object.assign(gameEditForm, emptyGameEditForm());
+  }
 });
 
-const canEditProfile = computed(() => {
-  const me = authUser.value;
-  if (!me) return false;
-  return String(me.id) === idParam.value;
-});
+const { idParam, syncAuth, canEditProfile } = useUserProfileAccess();
+await syncAuth();
 
 const emptyApiResponse = <T,>(data: T): ApiResponse<T> => ({
   message: '',
@@ -381,6 +652,47 @@ const gamesErrorMessage = computed(() =>
 const userGames = computed(() =>
   gamesFailed.value ? [] : (gamesResponse.value?.data.games ?? []),
 );
+
+function parseSortTime(input?: string | null): number | null {
+  if (!input) return null;
+  const trimmed = input.trim();
+  if (!trimmed || trimmed === '—') return null;
+  const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(trimmed);
+  const date = dateOnlyMatch
+    ? new Date(Number(dateOnlyMatch[1]), Number(dateOnlyMatch[2]) - 1, Number(dateOnlyMatch[3]))
+    : new Date(trimmed);
+  const time = date.getTime();
+  return Number.isNaN(time) ? null : time;
+}
+
+function getTableSortTime(ug: UserGameDto, key: TableSortKey): number | null {
+  switch (key) {
+    case 'startDate':
+      return parseSortTime(ug.startDate);
+    case 'finishedDate':
+      return parseSortTime(ug.finishedDate);
+    case 'createdAt':
+      return parseSortTime(ug.createdAt);
+    case 'updatedAt':
+      return parseSortTime(ug.updatedAt);
+  }
+}
+
+const tableUserGames = computed(() => {
+  const games = userGames.value;
+  const key = tableSortKey.value;
+  if (!key) return games;
+
+  const dir = tableSortDir.value;
+  return [...games].sort((a, b) => {
+    const ta = getTableSortTime(a, key);
+    const tb = getTableSortTime(b, key);
+    if (ta === null && tb === null) return 0;
+    if (ta === null) return 1;
+    if (tb === null) return -1;
+    return dir === 'asc' ? ta - tb : tb - ta;
+  });
+});
 
 const gamePages = computed(() => chunk(userGames.value, pageSize.value));
 
@@ -487,6 +799,66 @@ function fmtLocalDate(input?: string | null) {
 
 .game-table-panel {
   overflow-x: auto;
+}
+
+.game-table-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-weight: inherit;
+  color: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.game-table-sort-btn:hover .game-table-sort-icon {
+  color: rgb(var(--v-theme-primary));
+}
+
+.game-table-sort-icon {
+  color: rgba(var(--v-theme-on-surface), 0.45);
+  transition:
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.game-table-sort-icon--active {
+  color: rgb(var(--v-theme-primary));
+}
+
+.game-table-sort-icon--asc {
+  transform: rotate(180deg);
+}
+
+.table-edit-action {
+  overflow: hidden;
+}
+
+.table-edit-btn {
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.game-table .game-table-row {
+  transition:
+    background-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.game-table-row--clickable {
+  cursor: pointer;
+}
+
+.game-table-row--clickable:hover {
+  background: rgba(var(--v-theme-primary), 0.1);
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--v-theme-primary), 0.45),
+    0 0 18px rgba(var(--v-theme-primary), 0.28);
 }
 
 .game-img-placeholder {
