@@ -52,21 +52,38 @@
             </template>
           </v-tooltip>
 
-          <NuxtLink v-if="isLoggedIn && user" :to="`/user/${user.id}`" class="app-bar__user">
-            <v-avatar size="30" class="app-bar__user-avatar">
-              <v-img v-if="user.avatar" :src="user.avatar" :alt="user.nickName" cover />
-              <span v-else class="text-caption font-weight-bold">{{ userInitials }}</span>
-            </v-avatar>
-            <UserIdentity
-              :nick-name="user.nickName"
-              :user-name="user.userName"
-              size="sm"
-              class="app-bar__user-text d-none d-sm-flex"
-            />
-            <v-icon size="18" class="app-bar__user-chevron d-none d-sm-inline"
-              >mdi-chevron-down</v-icon
-            >
-          </NuxtLink>
+          <v-menu v-if="isLoggedIn && user" location="bottom end" offset="8">
+            <template #activator="{ props: menuProps }">
+              <button type="button" class="app-bar__user" aria-label="帳號選單" v-bind="menuProps">
+                <v-avatar size="30" class="app-bar__user-avatar">
+                  <v-img v-if="user.avatar" :src="user.avatar" :alt="user.nickName" cover />
+                  <span v-else class="text-caption font-weight-bold">{{ userInitials }}</span>
+                </v-avatar>
+                <UserIdentity
+                  :nick-name="user.nickName"
+                  :user-name="user.userName"
+                  size="sm"
+                  class="app-bar__user-text d-none d-sm-flex"
+                />
+                <v-icon size="18" class="app-bar__user-chevron d-none d-sm-inline"
+                  >mdi-chevron-down</v-icon
+                >
+              </button>
+            </template>
+            <v-list density="compact" min-width="180" rounded="lg" nav>
+              <v-list-item
+                :to="`/user/${user.id}`"
+                prepend-icon="mdi-account-outline"
+                title="個人資料"
+              />
+              <v-list-item
+                prepend-icon="mdi-logout"
+                title="登出"
+                :disabled="logoutLoading"
+                @click="submitLogout"
+              />
+            </v-list>
+          </v-menu>
 
           <v-btn
             v-else
@@ -139,7 +156,7 @@
 <script setup lang="ts">
 const route = useRoute();
 const { isDark, toggleTheme } = useAppTheme();
-const { user, isLoggedIn, login, refresh } = useAuth();
+const { user, isLoggedIn, login, logout, refresh } = useAuth();
 
 const drawer = ref(false);
 const loginOpen = ref(false);
@@ -147,6 +164,7 @@ const username = ref('');
 const password = ref('');
 const loginLoading = ref(false);
 const loginError = ref('');
+const logoutLoading = ref(false);
 
 const navItems = [
   { to: '/', label: '首頁', icon: 'mdi-home-outline' },
@@ -170,6 +188,17 @@ const openLogin = async () => {
   await refresh();
   if (isLoggedIn.value) return;
   loginOpen.value = true;
+};
+
+const submitLogout = async () => {
+  if (logoutLoading.value) return;
+  logoutLoading.value = true;
+  try {
+    await logout();
+    await navigateTo('/');
+  } finally {
+    logoutLoading.value = false;
+  }
 };
 
 const submitLogin = async () => {
@@ -317,7 +346,8 @@ const submitLogin = async () => {
   border: 1px solid rgba(var(--v-theme-outline), 0.55);
   background: rgba(var(--v-theme-surface-variant), 0.55);
   color: inherit;
-  text-decoration: none;
+  font: inherit;
+  cursor: pointer;
   transition:
     border-color 0.18s ease,
     background-color 0.18s ease;
