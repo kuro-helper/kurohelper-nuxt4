@@ -12,8 +12,10 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // runtimeConfig.apiBaseUrl ← NUXT_API_BASE_URL
     // runtimeConfig.apiToken   ← NUXT_API_TOKEN
+    // runtimeConfig.gameErogsAutocompleteFile ← NUXT_GAME_EROGS_AUTOCOMPLETE_FILE
     apiBaseUrl: '',
     apiToken: '',
+    gameErogsAutocompleteFile: '',
     public: {},
   },
   build: {
@@ -118,6 +120,11 @@ export default defineNuxtConfig({
           rounded: 'lg',
           density: 'comfortable',
           prependInnerIcon: 'mdi-calendar',
+        },
+        VAutocomplete: {
+          variant: 'outlined',
+          rounded: 'lg',
+          density: 'comfortable',
         },
       },
     },

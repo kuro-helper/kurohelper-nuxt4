@@ -78,6 +78,16 @@
           <div class="d-flex align-center justify-space-between flex-wrap ga-2 mb-4">
             <div class="text-h5 font-weight-bold">遊戲紀錄（UserGame）</div>
             <div v-if="!showPrivateGamesLock" class="d-flex align-center flex-wrap ga-2">
+              <v-btn
+                v-if="canEditProfile"
+                color="primary"
+                variant="tonal"
+                class="text-none"
+                prepend-icon="mdi-plus-circle-outline"
+                @click="openGameCreateModal"
+              >
+                建檔
+              </v-btn>
               <v-chip size="small" variant="tonal" color="primary"
                 >{{ userGames.length }} 筆</v-chip
               >
@@ -333,6 +343,91 @@
       </v-card-text>
     </v-card>
 
+    <v-dialog v-model="gameCreateModalOpen" max-width="520" opacity="0.58" scroll-strategy="block">
+      <v-card rounded="xl" variant="flat" color="surface" class="game-edit-dialog-card">
+        <v-card-title class="text-h6">建立遊戲紀錄</v-card-title>
+        <v-card-text>
+          <form class="d-flex flex-column ga-4" @submit.prevent="onGameCreateSubmit">
+            <v-autocomplete
+              v-model="gameCreateSelectedGame"
+              :items="gameAutocompleteItems"
+              :loading="gameAutocompleteLoading"
+              label="遊戲"
+              placeholder="輸入至少 2 個字搜尋"
+              item-title="name"
+              return-object
+              clearable
+              no-filter
+              hide-details="auto"
+              hint="輸入遊戲名稱搜尋"
+              no-data-text="找不到符合的遊戲"
+              persistent-hint
+              @update:search="onGameAutocompleteSearch"
+            >
+              <template #item="{ props: itemProps, item }">
+                <v-list-item v-bind="itemProps" :subtitle="`ID：${item.id}`" />
+              </template>
+            </v-autocomplete>
+
+            <v-select
+              v-model="gameCreateForm.status"
+              label="狀態"
+              :items="USER_GAME_STATUS_OPTIONS"
+              item-title="label"
+              item-value="value"
+              hide-details="auto"
+            />
+
+            <div class="d-flex flex-column ga-2">
+              <v-switch
+                v-model="gameCreateForm.wishListMark"
+                label="願望清單"
+                color="primary"
+                hide-details
+                density="compact"
+              />
+              <v-switch
+                v-model="gameCreateForm.blackListMark"
+                label="黑名單"
+                color="primary"
+                hide-details
+                density="compact"
+              />
+            </div>
+
+            <v-date-input
+              v-model="gameCreateDates.startDate"
+              label="開始時間"
+              clearable
+              hide-details="auto"
+            />
+            <v-date-input
+              v-model="gameCreateDates.finishedDate"
+              label="結束時間"
+              clearable
+              hide-details="auto"
+              :error-messages="gameCreateDateRangeError"
+            />
+
+            <v-btn
+              color="primary"
+              type="submit"
+              size="large"
+              class="text-none align-self-end mt-2"
+              :loading="gameCreateSubmitting"
+              :disabled="gameCreateSubmitting || !!gameCreateDateRangeError"
+            >
+              確定建立
+            </v-btn>
+          </form>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" class="text-none" @click="gameCreateModalOpen = false">關閉</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <v-dialog v-model="gameEditModalOpen" max-width="520" opacity="0.58" scroll-strategy="block">
       <v-card rounded="xl" variant="flat" color="surface" class="game-edit-dialog-card">
         <v-card-title class="text-h6">修改遊戲紀錄</v-card-title>
@@ -377,13 +472,13 @@
             </div>
 
             <v-date-input
-              v-model="gameEditStartDate"
+              v-model="gameEditDates.startDate"
               label="開始時間"
               clearable
               hide-details="auto"
             />
             <v-date-input
-              v-model="gameEditFinishedDate"
+              v-model="gameEditDates.finishedDate"
               label="結束時間"
               clearable
               hide-details="auto"
@@ -439,8 +534,10 @@ import type {
   FetchErrorLike,
   GetUserGameDto,
   UpdateUserGameBody,
+  CreateUserGameBody,
   UserGameDto,
 } from '~/types/user-api';
+import type { ErogsGameAutocompleteItem } from '~/types/game-erogs-api';
 
 const PLACEHOLDER_IMAGE_URL = 'https://image.kurohelper.com/docs/neneGIF.gif';
 
@@ -460,12 +557,18 @@ const tableReady = ref(false);
 const tableSortKey = ref<TableSortKey | null>(null);
 const tableSortDir = ref<TableSortDir>('desc');
 const tableEditUnlocked = ref(false);
+const gameCreateModalOpen = ref(false);
 const gameEditModalOpen = ref(false);
 const tableEditGame = ref<UserGameDto | null>(null);
 const gameEditSnackbar = ref(false);
 const gameEditSnackbarText = ref('');
 const gameEditSnackbarColor = ref<'success' | 'info' | 'error'>('info');
 const gameEditSubmitting = ref(false);
+const gameCreateSubmitting = ref(false);
+
+type CreateUserGameForm = UpdateUserGameBody & {
+  gameErogsId: number | null;
+};
 
 const emptyGameEditForm = (): UpdateUserGameBody => ({
   status: USER_GAME_STATUS.NONE,
@@ -475,50 +578,78 @@ const emptyGameEditForm = (): UpdateUserGameBody => ({
   finishedDate: null,
 });
 
+const emptyGameCreateForm = (): CreateUserGameForm => ({
+  gameErogsId: null,
+  status: USER_GAME_STATUS.NONE,
+  wishListMark: false,
+  blackListMark: false,
+  startDate: null,
+  finishedDate: null,
+});
+
 const gameEditForm = reactive<UpdateUserGameBody>(emptyGameEditForm());
+const gameCreateForm = reactive<CreateUserGameForm>(emptyGameCreateForm());
+const gameCreateSelectedGame = ref<ErogsGameAutocompleteItem | null>(null);
+const {
+  items: gameAutocompleteItems,
+  loading: gameAutocompleteLoading,
+  search: onGameAutocompleteSearch,
+  reset: resetGameAutocomplete,
+} = useErogsGameAutocomplete();
+
+watch(gameCreateSelectedGame, (game) => {
+  gameCreateForm.gameErogsId = game?.id ?? null;
+});
+
+type DateRangeForm = Pick<UpdateUserGameBody, 'startDate' | 'finishedDate'>;
 
 const dateAdapter = useDate();
 
-function bindIsoDateField(get: () => string | null, set: (value: string | null) => void) {
+function bindIsoDateField(form: DateRangeForm, key: keyof DateRangeForm) {
   return computed({
     get(): Date | null {
-      const raw = get()?.trim();
+      const raw = form[key]?.trim();
       if (!raw || !/^\d{4}-\d{2}-\d{2}/.test(raw)) return null;
       const date = dateAdapter.parseISO(raw.slice(0, 10)) as Date;
       return dateAdapter.isValid(date) ? date : null;
     },
     set(value: Date | null) {
       if (!value || !dateAdapter.isValid(value)) {
-        set(null);
+        form[key] = null;
         return;
       }
-      set(formatISO(value, { representation: 'complete' }));
+      form[key] = formatISO(value, { representation: 'complete' });
     },
   });
 }
 
-const gameEditStartDate = bindIsoDateField(
-  () => gameEditForm.startDate,
-  (v) => {
-    gameEditForm.startDate = v;
-  },
-);
-const gameEditFinishedDate = bindIsoDateField(
-  () => gameEditForm.finishedDate,
-  (v) => {
-    gameEditForm.finishedDate = v;
-  },
-);
+function bindIsoDateFields(form: DateRangeForm) {
+  return {
+    startDate: bindIsoDateField(form, 'startDate'),
+    finishedDate: bindIsoDateField(form, 'finishedDate'),
+  };
+}
 
-const gameEditDateRangeError = computed(() => {
-  const startRaw = gameEditForm.startDate?.trim();
-  const endRaw = gameEditForm.finishedDate?.trim();
+const gameEditDates = bindIsoDateFields(gameEditForm);
+const gameCreateDates = bindIsoDateFields(gameCreateForm);
+
+function dateRangeError(startDate: string | null, finishedDate: string | null) {
+  const startRaw = startDate?.trim();
+  const endRaw = finishedDate?.trim();
   if (!startRaw || !endRaw) return '';
   const start = new Date(startRaw);
   const end = new Date(endRaw);
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return '';
   return isAfter(start, end) ? '開始時間不能超過結束時間' : '';
-});
+}
+
+const gameEditDateRangeError = computed(() =>
+  dateRangeError(gameEditForm.startDate, gameEditForm.finishedDate),
+);
+
+const gameCreateDateRangeError = computed(() =>
+  dateRangeError(gameCreateForm.startDate, gameCreateForm.finishedDate),
+);
 
 const gamePage = ref(0);
 const display = useDisplay();
@@ -564,6 +695,57 @@ function closeGameEditModal() {
   tableEditGame.value = null;
   Object.assign(gameEditForm, emptyGameEditForm());
 }
+
+function openGameCreateModal() {
+  Object.assign(gameCreateForm, emptyGameCreateForm());
+  gameCreateSelectedGame.value = null;
+  resetGameAutocomplete();
+  gameCreateModalOpen.value = true;
+}
+
+function closeGameCreateModal() {
+  gameCreateModalOpen.value = false;
+  gameCreateSelectedGame.value = null;
+  resetGameAutocomplete();
+  Object.assign(gameCreateForm, emptyGameCreateForm());
+}
+
+const onGameCreateSubmit = async () => {
+  if (gameCreateDateRangeError.value) {
+    showGameEditSnackbar(gameCreateDateRangeError.value, 'error');
+    return;
+  }
+  const selectedGame = gameCreateSelectedGame.value;
+  if (!selectedGame?.id) {
+    showGameEditSnackbar('請選擇遊戲', 'error');
+    return;
+  }
+
+  const body: CreateUserGameBody = {
+    gameErogsId: selectedGame.id,
+    status: gameCreateForm.status,
+    wishListMark: gameCreateForm.wishListMark,
+    blackListMark: gameCreateForm.blackListMark,
+    startDate: gameCreateForm.startDate,
+    finishedDate: gameCreateForm.finishedDate,
+  };
+
+  gameCreateSubmitting.value = true;
+  try {
+    await $fetch<ApiResponse<UserGameDto>>(`/api/user/${encodeURIComponent(idParam.value)}/game`, {
+      method: 'POST',
+      body,
+    });
+    await refreshGames();
+    closeGameCreateModal();
+    showGameEditSnackbar('遊戲紀錄已建立', 'success');
+  } catch (err) {
+    logApiError(err);
+    showGameEditSnackbar(authErrorMessage(err, '建立失敗，請稍後再試'), 'error');
+  } finally {
+    gameCreateSubmitting.value = false;
+  }
+};
 
 function fillGameEditForm(ug: UserGameDto) {
   gameEditForm.status = ug.status;
@@ -628,6 +810,14 @@ watch(gameEditModalOpen, (open) => {
   if (!open) {
     tableEditGame.value = null;
     Object.assign(gameEditForm, emptyGameEditForm());
+  }
+});
+
+watch(gameCreateModalOpen, (open) => {
+  if (!open) {
+    gameCreateSelectedGame.value = null;
+    resetGameAutocomplete();
+    Object.assign(gameCreateForm, emptyGameCreateForm());
   }
 });
 
