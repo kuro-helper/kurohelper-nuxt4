@@ -79,6 +79,10 @@ export type UpdateUserGameBody = {
   finishedDate: string | null;
 };
 
+export type CreateUserGameBody = UpdateUserGameBody & {
+  gameErogsId: number;
+};
+
 export type ApiErrorResponse = {
   message?: string;
   data?: null;

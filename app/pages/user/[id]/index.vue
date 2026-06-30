@@ -414,7 +414,8 @@
               type="submit"
               size="large"
               class="text-none align-self-end mt-2"
-              :disabled="!!gameCreateDateRangeError"
+              :loading="gameCreateSubmitting"
+              :disabled="gameCreateSubmitting || !!gameCreateDateRangeError"
             >
               確定建立
             </v-btn>
@@ -533,6 +534,7 @@ import type {
   FetchErrorLike,
   GetUserGameDto,
   UpdateUserGameBody,
+  CreateUserGameBody,
   UserGameDto,
 } from '~/types/user-api';
 import type { ErogsGameAutocompleteItem } from '~/types/game-erogs-api';
@@ -562,6 +564,7 @@ const gameEditSnackbar = ref(false);
 const gameEditSnackbarText = ref('');
 const gameEditSnackbarColor = ref<'success' | 'info' | 'error'>('info');
 const gameEditSubmitting = ref(false);
+const gameCreateSubmitting = ref(false);
 
 type CreateUserGameForm = UpdateUserGameBody & {
   gameErogsId: number | null;
@@ -707,19 +710,42 @@ function closeGameCreateModal() {
   Object.assign(gameCreateForm, emptyGameCreateForm());
 }
 
-function onGameCreateSubmit() {
+const onGameCreateSubmit = async () => {
   if (gameCreateDateRangeError.value) {
     showGameEditSnackbar(gameCreateDateRangeError.value, 'error');
     return;
   }
-  if (!gameCreateSelectedGame.value?.id) {
+  const selectedGame = gameCreateSelectedGame.value;
+  if (!selectedGame?.id) {
     showGameEditSnackbar('請選擇遊戲', 'error');
     return;
   }
 
-  closeGameCreateModal();
-  showGameEditSnackbar('建檔功能尚未串接後端', 'info');
-}
+  const body: CreateUserGameBody = {
+    gameErogsId: selectedGame.id,
+    status: gameCreateForm.status,
+    wishListMark: gameCreateForm.wishListMark,
+    blackListMark: gameCreateForm.blackListMark,
+    startDate: gameCreateForm.startDate,
+    finishedDate: gameCreateForm.finishedDate,
+  };
+
+  gameCreateSubmitting.value = true;
+  try {
+    await $fetch<ApiResponse<UserGameDto>>(`/api/user/${encodeURIComponent(idParam.value)}/game`, {
+      method: 'POST',
+      body,
+    });
+    await refreshGames();
+    closeGameCreateModal();
+    showGameEditSnackbar('遊戲紀錄已建立', 'success');
+  } catch (err) {
+    logApiError(err);
+    showGameEditSnackbar(authErrorMessage(err, '建立失敗，請稍後再試'), 'error');
+  } finally {
+    gameCreateSubmitting.value = false;
+  }
+};
 
 function fillGameEditForm(ug: UserGameDto) {
   gameEditForm.status = ug.status;
