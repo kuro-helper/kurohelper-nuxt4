@@ -349,9 +349,12 @@
         <v-card-text>
           <form class="d-flex flex-column ga-4" @submit.prevent="onGameCreateSubmit">
             <v-autocomplete
+              ref="gameCreateAutocompleteRef"
               v-model="gameCreateSelectedGame"
+              v-model:search="gameAutocompleteSearch"
               :items="gameAutocompleteItems"
               :loading="gameAutocompleteLoading"
+              class="game-create-autocomplete"
               label="遊戲"
               placeholder="輸入至少 2 個字搜尋"
               item-title="name"
@@ -362,10 +365,48 @@
               hint="輸入遊戲名稱搜尋"
               no-data-text="找不到符合的遊戲"
               persistent-hint
+              :menu-props="gameAutocompleteMenuProps"
+              @update:menu="onGameAutocompleteMenu"
+              @click:clear="clearGameAutocomplete"
               @update:search="onGameAutocompleteSearch"
             >
               <template #item="{ props: itemProps, item }">
-                <v-list-item v-bind="itemProps" :subtitle="`ID：${item.id}`" />
+                <v-list-item v-bind="itemProps" class="game-create-autocomplete-item">
+                  <template #title>
+                    <span class="game-create-autocomplete-item__title">
+                      {{ gameOf(item).name }}
+                    </span>
+                  </template>
+                  <template #subtitle>
+                    <span class="game-create-autocomplete-item__subtitle">
+                      ID：{{ gameOf(item).id }}
+                    </span>
+                  </template>
+                  <template v-if="gameOf(item).category" #append>
+                    <v-chip
+                      size="x-small"
+                      variant="tonal"
+                      :color="erogsGameCategoryChipColor(gameOf(item).category)"
+                      class="flex-shrink-0"
+                    >
+                      {{ gameOf(item).category }}
+                    </v-chip>
+                  </template>
+                </v-list-item>
+              </template>
+              <template #selection="{ item }">
+                <span class="game-create-selection">
+                  <span class="game-create-selection__name">{{ gameOf(item).name }}</span>
+                  <v-chip
+                    v-if="gameOf(item).category"
+                    size="x-small"
+                    variant="tonal"
+                    :color="erogsGameCategoryChipColor(gameOf(item).category)"
+                    class="ms-2 flex-shrink-0"
+                  >
+                    {{ gameOf(item).category }}
+                  </v-chip>
+                </span>
               </template>
             </v-autocomplete>
 
@@ -521,6 +562,8 @@
 import { formatISO, isAfter } from 'date-fns';
 import { authErrorMessage } from '~/composables/useAuth';
 import { apiErrorUserMessage, logApiError } from '~/utils/apiError';
+import { erogsGameCategoryChipColor } from '~/utils/erogsGameCategory';
+import { unwrapErogsAutocompleteItem } from '~/utils/erogsGameAutocompleteItem';
 import {
   USER_GAME_STATUS,
   USER_GAME_STATUS_OPTIONS,
@@ -538,6 +581,8 @@ import type {
   UserGameDto,
 } from '~/types/user-api';
 import type { ErogsGameAutocompleteItem } from '~/types/game-erogs-api';
+
+const gameOf = unwrapErogsAutocompleteItem;
 
 const PLACEHOLDER_IMAGE_URL = 'https://image.kurohelper.com/docs/neneGIF.gif';
 
@@ -590,6 +635,9 @@ const emptyGameCreateForm = (): CreateUserGameForm => ({
 const gameEditForm = reactive<UpdateUserGameBody>(emptyGameEditForm());
 const gameCreateForm = reactive<CreateUserGameForm>(emptyGameCreateForm());
 const gameCreateSelectedGame = ref<ErogsGameAutocompleteItem | null>(null);
+const gameAutocompleteSearch = ref('');
+const gameCreateAutocompleteRef = ref<{ $el: HTMLElement } | null>(null);
+const gameAutocompleteMenuWidth = ref<number | undefined>(undefined);
 const {
   items: gameAutocompleteItems,
   loading: gameAutocompleteLoading,
@@ -597,8 +645,41 @@ const {
   reset: resetGameAutocomplete,
 } = useErogsGameAutocomplete();
 
-watch(gameCreateSelectedGame, (game) => {
+function syncGameAutocompleteMenuWidth() {
+  const root = gameCreateAutocompleteRef.value?.$el;
+  const field = root?.querySelector('.v-field');
+  if (field instanceof HTMLElement && field.offsetWidth > 0) {
+    gameAutocompleteMenuWidth.value = field.offsetWidth;
+  }
+}
+
+function onGameAutocompleteMenu(open: boolean) {
+  if (!open) return;
+  nextTick(() => {
+    syncGameAutocompleteMenuWidth();
+  });
+}
+
+const gameAutocompleteMenuProps = computed(() => {
+  const width = gameAutocompleteMenuWidth.value;
+  return {
+    contentClass: 'v-select__content game-create-autocomplete-menu',
+    ...(width ? { maxWidth: width, minWidth: width, width } : {}),
+  };
+});
+
+function clearGameAutocomplete() {
+  gameCreateSelectedGame.value = null;
+  gameAutocompleteSearch.value = '';
+  resetGameAutocomplete();
+}
+
+watch(gameCreateSelectedGame, (game, prev) => {
   gameCreateForm.gameErogsId = game?.id ?? null;
+  if (prev && !game) {
+    gameAutocompleteSearch.value = '';
+    resetGameAutocomplete();
+  }
 });
 
 type DateRangeForm = Pick<UpdateUserGameBody, 'startDate' | 'finishedDate'>;
@@ -699,13 +780,19 @@ function closeGameEditModal() {
 function openGameCreateModal() {
   Object.assign(gameCreateForm, emptyGameCreateForm());
   gameCreateSelectedGame.value = null;
+  gameAutocompleteSearch.value = '';
+  gameAutocompleteMenuWidth.value = undefined;
   resetGameAutocomplete();
   gameCreateModalOpen.value = true;
+  nextTick(() => {
+    syncGameAutocompleteMenuWidth();
+  });
 }
 
 function closeGameCreateModal() {
   gameCreateModalOpen.value = false;
   gameCreateSelectedGame.value = null;
+  gameAutocompleteSearch.value = '';
   resetGameAutocomplete();
   Object.assign(gameCreateForm, emptyGameCreateForm());
 }
@@ -816,6 +903,7 @@ watch(gameEditModalOpen, (open) => {
 watch(gameCreateModalOpen, (open) => {
   if (!open) {
     gameCreateSelectedGame.value = null;
+    gameAutocompleteSearch.value = '';
     resetGameAutocomplete();
     Object.assign(gameCreateForm, emptyGameCreateForm());
   }
@@ -1217,6 +1305,32 @@ function fmtLocalDate(input?: string | null) {
 .game-edit-title {
   word-break: break-word;
 }
+
+.game-create-autocomplete :deep(.v-field__input) {
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.game-create-autocomplete :deep(.v-autocomplete__selection) {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.game-create-selection {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.game-create-selection__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 </style>
 
 <style>
@@ -1228,5 +1342,33 @@ function fmtLocalDate(input?: string | null) {
 
 .v-theme--light .game-edit-dialog-card.v-card {
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18) !important;
+}
+
+.game-create-autocomplete-menu.v-overlay__content {
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.game-create-autocomplete-menu .v-virtual-scroll,
+.game-create-autocomplete-menu .v-list {
+  width: 100%;
+  max-width: 100%;
+}
+
+.game-create-autocomplete-menu .v-list-item {
+  max-width: 100%;
+}
+
+.game-create-autocomplete-menu .v-list-item__content {
+  min-width: 0 !important;
+  overflow: hidden;
+}
+
+.game-create-autocomplete-menu .game-create-autocomplete-item__title,
+.game-create-autocomplete-menu .game-create-autocomplete-item__subtitle {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>
