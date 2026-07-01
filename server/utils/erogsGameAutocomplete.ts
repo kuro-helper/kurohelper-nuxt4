@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 export type ErogsGameItem = {
   id: number;
   name: string;
+  category: string;
 };
 
 const SEARCH_LIMIT = 20;
@@ -15,16 +16,18 @@ let games: ErogsGameItem[] = [];
 const invertedIndex = new Map<string, number[]>();
 
 function distinctGames(entries: ErogsGameItem[]): ErogsGameItem[] {
-  const seen = new Set<string>();
+  const seen = new Set<number>();
   const result: ErogsGameItem[] = [];
 
   for (const entry of entries) {
     if (!entry?.name?.trim() || entry.id <= 0) continue;
-    const name = entry.name.trim();
-    const key = `${entry.id}\0${name}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    result.push({ id: entry.id, name });
+    if (seen.has(entry.id)) continue;
+    seen.add(entry.id);
+    result.push({
+      id: entry.id,
+      name: entry.name.trim(),
+      category: (entry.category ?? '').trim(),
+    });
   }
 
   return result;
