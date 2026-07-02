@@ -16,7 +16,14 @@ export default defineNuxtConfig({
     apiBaseUrl: '',
     apiToken: '',
     gameErogsAutocompleteFile: '',
-    public: {},
+    public: {
+      siteUrl: '',
+      ogTitle: '',
+      ogDescription: '',
+      ogImage: '',
+      ogType: '',
+      twitterCard: '',
+    },
   },
   build: {
     transpile: ['vuetify'],

@@ -582,6 +582,8 @@ import type {
 } from '~/types/user-api';
 import type { ErogsGameAutocompleteItem } from '~/types/game-erogs-api';
 
+useSeoMeta({ robots: 'noindex, nofollow, noarchive' });
+
 const gameOf = unwrapErogsAutocompleteItem;
 
 const PLACEHOLDER_IMAGE_URL = 'https://image.kurohelper.com/docs/neneGIF.gif';

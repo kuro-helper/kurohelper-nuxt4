@@ -20,15 +20,23 @@
         </NuxtLink>
 
         <nav class="app-bar__nav d-none d-md-flex" aria-label="主要導覽">
-          <NuxtLink
-            v-for="item in navItems"
-            :key="item.to"
-            :to="item.to"
-            class="app-bar__nav-link"
-            :class="{ 'app-bar__nav-link--active': isNavActive(item.to) }"
-          >
-            {{ item.label }}
-          </NuxtLink>
+          <template v-for="item in navItems" :key="item.to">
+            <span
+              v-if="item.disabled"
+              class="app-bar__nav-link app-bar__nav-link--disabled"
+              aria-disabled="true"
+            >
+              {{ item.label }}
+            </span>
+            <NuxtLink
+              v-else
+              :to="item.to"
+              class="app-bar__nav-link"
+              :class="{ 'app-bar__nav-link--active': isNavActive(item.to) }"
+            >
+              {{ item.label }}
+            </NuxtLink>
+          </template>
         </nav>
 
         <v-spacer />
@@ -104,9 +112,10 @@
         <v-list-item
           v-for="item in navItems"
           :key="item.to"
-          :to="item.to"
+          :to="item.disabled ? undefined : item.to"
           rounded="lg"
-          :active="isNavActive(item.to)"
+          :active="!item.disabled && isNavActive(item.to)"
+          :disabled="item.disabled"
           @click="drawer = false"
         >
           <template #prepend>
@@ -168,10 +177,11 @@ const logoutLoading = ref(false);
 
 const navItems = [
   { to: '/', label: '首頁', icon: 'mdi-home-outline' },
-  { to: '/game/1001', label: '遊戲詳情', icon: 'mdi-gamepad-variant-outline' },
+  { to: '/search', label: '查詢', icon: 'mdi-magnify', disabled: true },
+  { to: '/game/1001', label: '遊戲詳情', icon: 'mdi-gamepad-variant-outline', disabled: true },
   { to: '/user', label: '使用者', icon: 'mdi-account-outline' },
   { to: '/register', label: '註冊', icon: 'mdi-account-plus-outline' },
-] as const;
+];
 
 const isNavActive = (to: string) => {
   if (to === '/') return route.path === '/';
@@ -325,6 +335,12 @@ const submitLogin = async () => {
 .app-bar__nav-link--active {
   color: rgb(var(--v-theme-primary));
   background: rgba(var(--v-theme-primary), 0.14);
+}
+
+.app-bar__nav-link--disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .app-bar__actions {

@@ -112,6 +112,8 @@ import type {
   UserProfileDto,
 } from '~/types/user-api';
 
+useSeoMeta({ robots: 'noindex, nofollow, noarchive' });
+
 const { idParam, authUser, refreshAuth, syncAuth, canEditProfile } = useUserProfileAccess();
 await syncAuth();
 
