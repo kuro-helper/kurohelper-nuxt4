@@ -73,7 +73,7 @@
                   {{ item.nickName || '—' }}
                 </div>
 
-                <v-chip
+                <!-- <v-chip
                   v-if="item.discordId"
                   size="small"
                   color="primary"
@@ -85,7 +85,7 @@
                 </v-chip>
                 <v-chip v-else size="small" color="error" variant="tonal" label class="mb-2">
                   尚未綁定 Discord
-                </v-chip>
+                </v-chip> -->
 
                 <UserRoleChip :role="item.role" size="x-small" />
               </v-card-text>
