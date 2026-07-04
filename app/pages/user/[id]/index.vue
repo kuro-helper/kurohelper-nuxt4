@@ -547,7 +547,7 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" class="text-none" @click="gameEditModalOpen = false">關閉</v-btn>
+          <v-btn variant="text" class="text-none" @click.stop="closeGameEditModal">關閉</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -707,10 +707,10 @@ function bindIsoDateField(form: DateRangeForm, key: keyof DateRangeForm) {
 }
 
 function bindIsoDateFields(form: DateRangeForm) {
-  return {
+  return reactive({
     startDate: bindIsoDateField(form, 'startDate'),
     finishedDate: bindIsoDateField(form, 'finishedDate'),
-  };
+  });
 }
 
 const gameEditDates = bindIsoDateFields(gameEditForm);
