@@ -79,6 +79,28 @@
             <div class="text-h5 font-weight-bold">遊戲紀錄（UserGame）</div>
             <div v-if="!showPrivateGamesLock" class="d-flex align-center flex-wrap ga-2">
               <v-btn
+                icon="mdi-filter"
+                variant="tonal"
+                size="small"
+                rounded="xl"
+                class="status-filter-btn"
+                @click="toggleStatusFilter"
+              >
+                <v-icon>{{ statusFilter === null ? 'mdi-filter' : 'mdi-filter-outline' }}</v-icon>
+                <v-tooltip activator="parent" location="bottom">
+                  {{ statusFilterLabel }}
+                </v-tooltip>
+              </v-btn>
+              <v-chip
+                v-if="statusFilter !== null"
+                size="small"
+                variant="tonal"
+                :color="userGameStatusColor(statusFilter!)"
+                label
+              >
+                {{ statusFilterLabel }}
+              </v-chip>
+              <v-btn
                 v-if="canEditProfile"
                 color="primary"
                 variant="tonal"
@@ -89,7 +111,7 @@
                 建檔
               </v-btn>
               <v-chip size="small" variant="tonal" color="primary"
-                >{{ userGames.length }} 筆</v-chip
+                >{{ filteredUserGames.length }} 筆</v-chip
               >
               <template v-if="gameViewMode === 'card' && gamePages.length > 0">
                 <v-btn
@@ -147,14 +169,20 @@
 
           <template v-else>
             <v-sheet
-              v-if="userGames.length === 0 && !gamesPending"
+              v-if="filteredUserGames.length === 0 && !gamesPending"
               rounded="xl"
               border
               color="surface-variant"
               class="empty-state pa-8 text-center"
             >
               <v-img :src="PLACEHOLDER_IMAGE_URL" alt="" max-width="120" class="mx-auto mb-4" />
-              <p class="text-body-2 text-medium-emphasis mb-0">尚無關聯遊戲資料。</p>
+              <p class="text-body-2 text-medium-emphasis mb-0">
+                {{
+                  statusFilter === null
+                    ? '尚無關聯遊戲資料。'
+                    : `無符合「${statusFilterLabel}」的遊戲資料。`
+                }}
+              </p>
             </v-sheet>
 
             <div v-else class="game-view-stack">
@@ -566,6 +594,7 @@ import { erogsGameCategoryChipColor } from '~/utils/erogsGameCategory';
 import { unwrapErogsAutocompleteItem } from '~/utils/erogsGameAutocompleteItem';
 import {
   USER_GAME_STATUS,
+  USER_GAME_STATUS_LABELS,
   USER_GAME_STATUS_OPTIONS,
   userGameStatusColor,
   userGameStatusLabel,
@@ -748,6 +777,34 @@ const chunk = <T,>(items: T[], size: number) => {
   }
   return out;
 };
+
+// 狀態篩選相關
+const statusFilter = ref<number | null>(null);
+
+const statusFilterOptions: { value: number | null; label: string }[] = [
+  { value: null, label: '不篩選' },
+  { value: USER_GAME_STATUS.NONE, label: USER_GAME_STATUS_LABELS[USER_GAME_STATUS.NONE] },
+  { value: USER_GAME_STATUS.FINISHED, label: USER_GAME_STATUS_LABELS[USER_GAME_STATUS.FINISHED] },
+  { value: USER_GAME_STATUS.PLAYING, label: USER_GAME_STATUS_LABELS[USER_GAME_STATUS.PLAYING] },
+  { value: USER_GAME_STATUS.STALLED, label: USER_GAME_STATUS_LABELS[USER_GAME_STATUS.STALLED] },
+  { value: USER_GAME_STATUS.DROPPED, label: USER_GAME_STATUS_LABELS[USER_GAME_STATUS.DROPPED] },
+];
+
+const statusFilterLabel = computed(() => {
+  const opt = statusFilterOptions.find((o) => o.value === statusFilter.value);
+  return opt!.label;
+});
+
+function toggleStatusFilter() {
+  const currentIndex = statusFilterOptions.findIndex((o) => o.value === statusFilter.value);
+  const nextIndex = (currentIndex + 1) % statusFilterOptions.length;
+  statusFilter.value = statusFilterOptions[nextIndex]!.value;
+}
+
+const filteredUserGames = computed(() => {
+  if (statusFilter.value === null) return userGames.value;
+  return userGames.value.filter((ug) => ug.status === statusFilter.value);
+});
 
 const VIEW_ORDER: Record<GameViewMode, number> = { card: 0, table: 1 };
 const slideName = ref<'slide-next' | 'slide-prev'>('slide-next');
@@ -988,7 +1045,7 @@ function getTableSortTime(ug: UserGameDto, key: TableSortKey): number | null {
 }
 
 const tableUserGames = computed(() => {
-  const games = userGames.value;
+  const games = filteredUserGames.value;
   const key = tableSortKey.value;
   if (!key) return games;
 
@@ -1003,7 +1060,7 @@ const tableUserGames = computed(() => {
   });
 });
 
-const gamePages = computed(() => chunk(userGames.value, pageSize.value));
+const gamePages = computed(() => chunk(filteredUserGames.value, pageSize.value));
 
 watch(idParam, () => {
   gamePage.value = 0;
