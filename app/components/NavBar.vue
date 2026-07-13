@@ -403,6 +403,7 @@ const submitLogin = async () => {
 }
 
 .v-theme--light .login-dialog-card.v-card {
+  border-color: rgba(var(--v-theme-outline), 0.85);
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18) !important;
 }
 </style>

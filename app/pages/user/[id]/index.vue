@@ -41,10 +41,6 @@
               <div class="flex-grow-1 min-w-0">
                 <UserIdentity :nick-name="user.nickName" :user-name="user.userName" size="lg" />
                 <div class="d-flex flex-wrap ga-2 mt-2">
-                  <v-chip v-if="user.discordId" color="primary" variant="tonal" label>
-                    Discord：{{ user.discordId }}
-                  </v-chip>
-                  <v-chip v-else color="error" variant="tonal" label>尚未綁定 Discord</v-chip>
                   <UserRoleChip :role="user.role" />
                 </div>
               </div>
@@ -1400,6 +1396,7 @@ function fmtLocalDate(input?: string | null) {
 }
 
 .v-theme--light .game-edit-dialog-card.v-card {
+  border-color: rgba(var(--v-theme-outline), 0.85);
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18) !important;
 }
 

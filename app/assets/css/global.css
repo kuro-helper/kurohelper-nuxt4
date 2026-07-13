@@ -1,4 +1,4 @@
-/* 全站字型、Vuetify shell、深色底圖（淺色交由 theme） */
+/* 全站字型、Vuetify shell、深淺色底圖光暈 */
 :root {
   font-family:
     'Geist Sans',
@@ -55,9 +55,28 @@ body,
   border-radius: 999px;
 }
 
+.v-theme--light .v-card--variant-outlined,
+.v-application.v-theme--light .v-card--variant-outlined,
+.v-theme--light .v-sheet--border,
+.v-application.v-theme--light .v-sheet--border {
+  border-color: rgba(var(--v-theme-outline), 0.85);
+}
+
 .v-theme--dark .v-application .mui-card,
 .v-application.v-theme--dark .mui-card {
   box-shadow: 0 18px 35px rgba(0, 0, 0, 0.25);
+}
+
+.v-theme--light .v-application,
+.v-application.v-theme--light {
+  background-color: rgb(var(--v-theme-background));
+  background-image:
+    radial-gradient(circle at 18% 0%, rgba(29, 78, 216, 0.16), transparent 38%),
+    radial-gradient(circle at 84% 8%, rgba(2, 132, 199, 0.14), transparent 36%),
+    radial-gradient(circle at 50% 100%, rgba(37, 99, 235, 0.08), transparent 42%),
+    linear-gradient(165deg, #dce4f2 0%, #e8eef8 48%, #eef2f8 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
 }
 
 .v-theme--dark .v-application,

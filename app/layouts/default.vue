@@ -8,6 +8,8 @@
       <slot />
       <NuxtRouteAnnouncer />
     </v-main>
+
+    <ScrollToTopFab />
   </div>
 </template>
 
