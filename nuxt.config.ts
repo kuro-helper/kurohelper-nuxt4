@@ -129,6 +129,7 @@ export default defineNuxtConfig({
           rounded: 'lg',
           density: 'comfortable',
           prependInnerIcon: 'mdi-calendar',
+          inputFormat: 'yyyy/MM/dd',
         },
         VAutocomplete: {
           variant: 'outlined',
