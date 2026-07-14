@@ -12,7 +12,7 @@
       "
     >
       <v-card-text class="pa-6 pa-md-8">
-        <div v-if="gamesPending" class="d-flex justify-center py-16">
+        <div v-if="gamesInitialLoading" class="d-flex justify-center py-16">
           <v-progress-circular indeterminate color="primary" size="40" />
         </div>
 
@@ -72,30 +72,34 @@
           </div>
 
           <div class="d-flex align-center justify-space-between flex-wrap ga-2 mb-4">
-            <div class="text-h5 font-weight-bold">遊戲紀錄（UserGame）</div>
-            <div v-if="!showPrivateGamesLock" class="d-flex align-center flex-wrap ga-2">
-              <v-btn
-                icon="mdi-filter"
-                variant="tonal"
-                size="small"
-                rounded="xl"
-                class="status-filter-btn"
-                @click="toggleStatusFilter"
-              >
-                <v-icon>{{ statusFilter === null ? 'mdi-filter' : 'mdi-filter-outline' }}</v-icon>
-                <v-tooltip activator="parent" location="bottom">
+            <div class="d-flex align-center flex-wrap ga-2 min-w-0">
+              <div class="text-h5 font-weight-bold">遊戲紀錄（UserGame）</div>
+              <template v-if="!showPrivateGamesLock">
+                <v-btn
+                  icon="mdi-filter"
+                  variant="tonal"
+                  size="small"
+                  rounded="xl"
+                  class="status-filter-btn"
+                  @click="toggleStatusFilter"
+                >
+                  <v-icon>{{ statusFilter === null ? 'mdi-filter' : 'mdi-filter-outline' }}</v-icon>
+                  <v-tooltip activator="parent" location="bottom">
+                    {{ statusFilterLabel }}
+                  </v-tooltip>
+                </v-btn>
+                <v-chip
+                  v-if="statusFilter !== null"
+                  size="small"
+                  variant="tonal"
+                  :color="userGameStatusColor(statusFilter!)"
+                  label
+                >
                   {{ statusFilterLabel }}
-                </v-tooltip>
-              </v-btn>
-              <v-chip
-                v-if="statusFilter !== null"
-                size="small"
-                variant="tonal"
-                :color="userGameStatusColor(statusFilter!)"
-                label
-              >
-                {{ statusFilterLabel }}
-              </v-chip>
+                </v-chip>
+              </template>
+            </div>
+            <div v-if="!showPrivateGamesLock" class="d-flex align-center flex-wrap ga-2">
               <v-btn
                 v-if="canEditProfile"
                 color="primary"
@@ -105,6 +109,18 @@
                 @click="openGameCreateModal"
               >
                 建檔
+              </v-btn>
+              <v-btn
+                v-if="canEditProfile"
+                :color="tableEditUnlocked ? 'primary' : undefined"
+                variant="tonal"
+                class="text-none"
+                @click="toggleTableEdit"
+              >
+                <v-icon start>
+                  {{ tableEditUnlocked ? 'mdi-lock-open-variant' : 'mdi-lock' }}
+                </v-icon>
+                修改
               </v-btn>
               <v-chip size="small" variant="tonal" color="primary"
                 >{{ filteredUserGames.length }} 筆</v-chip
@@ -199,8 +215,12 @@
                           rounded="xl"
                           variant="outlined"
                           class="game-card d-flex flex-column"
-                          :class="{ 'game-card--status': !!userGameStatusColor(ug.status) }"
+                          :class="{
+                            'game-card--status': !!userGameStatusColor(ug.status),
+                            'game-card--editable': tableEditUnlocked,
+                          }"
                           :style="userGameStatusThemeStyle(ug.status)"
+                          @click="onGameEditClick(ug)"
                         >
                           <v-img
                             :src="gameImage(ug)"
@@ -232,6 +252,24 @@
                                   variant="tonal"
                                 >
                                   {{ userGameStatusLabel(ug.status) }}
+                                </v-chip>
+                                <v-chip
+                                  v-if="ug.wishListMark"
+                                  size="small"
+                                  variant="tonal"
+                                  color="error"
+                                  prepend-icon="mdi-heart"
+                                >
+                                  願望清單
+                                </v-chip>
+                                <v-chip
+                                  v-if="ug.blackListMark"
+                                  size="small"
+                                  variant="tonal"
+                                  color="warning"
+                                  prepend-icon="mdi-cancel"
+                                >
+                                  黑名單
                                 </v-chip>
                               </div>
                             </v-card-subtitle>
@@ -278,22 +316,6 @@
                   v-show="gameViewMode === 'table'"
                   class="game-table-panel game-view-layer"
                 >
-                  <Transition :name="slideName">
-                    <div v-if="canEditProfile" class="table-edit-action d-flex justify-end mb-3">
-                      <v-btn
-                        :color="tableEditUnlocked ? 'primary' : undefined"
-                        variant="tonal"
-                        class="text-none table-edit-btn"
-                        @click="toggleTableEdit"
-                      >
-                        <v-icon start>
-                          {{ tableEditUnlocked ? 'mdi-lock-open-variant' : 'mdi-lock' }}
-                        </v-icon>
-                        修改
-                      </v-btn>
-                    </div>
-                  </Transition>
-
                   <v-table density="comfortable" class="rounded border bg-surface game-table">
                     <thead>
                       <tr>
@@ -327,7 +349,7 @@
                         :key="`table-${ug.gameErogsId}-${idx}`"
                         class="game-table-row"
                         :class="{ 'game-table-row--clickable': tableEditUnlocked }"
-                        @click="onTableRowClick(ug)"
+                        @click="onGameEditClick(ug)"
                       >
                         <td class="game-name-td">
                           <div class="game-name-cell">
@@ -500,13 +522,27 @@
           <form class="d-flex flex-column ga-4" @submit.prevent="onGameEditSubmit">
             <div>
               <div class="text-caption text-medium-emphasis mb-2">遊戲</div>
-              <div class="d-flex align-center flex-wrap ga-2">
-                <span class="text-body-1 font-weight-medium game-edit-title">{{
-                  gameTitle(tableEditGame)
-                }}</span>
-                <v-chip size="small" variant="tonal" color="info" label>
-                  ID：{{ tableEditGame.gameErogsId }}
-                </v-chip>
+              <div class="d-flex align-center ga-3 min-w-0">
+                <v-img
+                  :src="gameImage(tableEditGame)"
+                  width="72"
+                  height="72"
+                  cover
+                  rounded="lg"
+                  class="flex-shrink-0 game-edit-cover"
+                >
+                  <template #placeholder>
+                    <div class="fill-height game-img-placeholder" />
+                  </template>
+                </v-img>
+                <div class="d-flex flex-column ga-2 min-w-0 flex-grow-1">
+                  <span class="text-body-1 font-weight-medium game-edit-title">{{
+                    gameTitle(tableEditGame)
+                  }}</span>
+                  <v-chip size="small" variant="tonal" color="info" label class="align-self-start">
+                    ID：{{ tableEditGame.gameErogsId }}
+                  </v-chip>
+                </div>
               </div>
             </div>
 
@@ -809,9 +845,6 @@ watch(gameViewMode, (next, prev) => {
   slideName.value = VIEW_ORDER[next] >= VIEW_ORDER[prev] ? 'slide-next' : 'slide-prev';
   if (next === 'table') tableReady.value = true;
   if (next !== 'table') {
-    tableEditUnlocked.value = false;
-    gameEditModalOpen.value = false;
-    tableEditGame.value = null;
     tableSortKey.value = null;
     tableSortDir.value = 'desc';
   }
@@ -908,7 +941,7 @@ function toggleTableEdit() {
   if (!tableEditUnlocked.value) closeGameEditModal();
 }
 
-function onTableRowClick(ug: UserGameDto) {
+function onGameEditClick(ug: UserGameDto) {
   if (!tableEditUnlocked.value) return;
   tableEditGame.value = ug;
   fillGameEditForm(ug);
@@ -1006,6 +1039,11 @@ watch(gamesError, (err) => {
 });
 
 const gamesFailed = computed(() => gamesStatus.value === 'error');
+
+/** 僅初次載入顯示全頁 spinner，refresh 時保留畫面 */
+const gamesInitialLoading = computed(
+  () => gamesPending.value && (gamesResponse.value?.data.user.id ?? 0) === 0,
+);
 
 const gamesErrorMessage = computed(() =>
   gamesError.value ? apiErrorUserMessage(gamesError.value) : '請稍後再試。',
@@ -1277,12 +1315,27 @@ function fmtLocalDate(input?: string | null) {
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
   transition:
     box-shadow 0.2s ease,
-    transform 0.2s ease;
+    transform 0.2s ease,
+    border-color 0.2s ease;
   height: 100%;
 }
 
 .game-card:hover {
   box-shadow: 0 10px 32px rgba(0, 0, 0, 0.14) !important;
+  transform: translateY(-2px);
+}
+
+.game-card--editable {
+  cursor: pointer;
+}
+
+.game-card--editable:hover {
+  background: rgba(var(--v-theme-primary), 0.1) !important;
+  border-color: rgba(var(--v-theme-primary), 0.45) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--v-theme-primary), 0.45),
+    0 0 18px rgba(var(--v-theme-primary), 0.28),
+    0 10px 32px rgba(0, 0, 0, 0.14) !important;
   transform: translateY(-2px);
 }
 
@@ -1359,6 +1412,11 @@ function fmtLocalDate(input?: string | null) {
 
 .game-edit-title {
   word-break: break-word;
+}
+
+.game-edit-cover {
+  border: 1px solid rgba(var(--v-theme-outline), 0.55);
+  overflow: hidden;
 }
 
 .game-create-autocomplete :deep(.v-field__input) {
