@@ -12,7 +12,7 @@
       "
     >
       <v-card-text class="pa-6 pa-md-8">
-        <div v-if="gamesPending" class="d-flex justify-center py-16">
+        <div v-if="gamesInitialLoading" class="d-flex justify-center py-16">
           <v-progress-circular indeterminate color="primary" size="40" />
         </div>
 
@@ -500,13 +500,27 @@
           <form class="d-flex flex-column ga-4" @submit.prevent="onGameEditSubmit">
             <div>
               <div class="text-caption text-medium-emphasis mb-2">遊戲</div>
-              <div class="d-flex align-center flex-wrap ga-2">
-                <span class="text-body-1 font-weight-medium game-edit-title">{{
-                  gameTitle(tableEditGame)
-                }}</span>
-                <v-chip size="small" variant="tonal" color="info" label>
-                  ID：{{ tableEditGame.gameErogsId }}
-                </v-chip>
+              <div class="d-flex align-center ga-3 min-w-0">
+                <v-img
+                  :src="gameImage(tableEditGame)"
+                  width="72"
+                  height="72"
+                  cover
+                  rounded="lg"
+                  class="flex-shrink-0 game-edit-cover"
+                >
+                  <template #placeholder>
+                    <div class="fill-height game-img-placeholder" />
+                  </template>
+                </v-img>
+                <div class="d-flex flex-column ga-2 min-w-0 flex-grow-1">
+                  <span class="text-body-1 font-weight-medium game-edit-title">{{
+                    gameTitle(tableEditGame)
+                  }}</span>
+                  <v-chip size="small" variant="tonal" color="info" label class="align-self-start">
+                    ID：{{ tableEditGame.gameErogsId }}
+                  </v-chip>
+                </div>
               </div>
             </div>
 
@@ -1007,6 +1021,11 @@ watch(gamesError, (err) => {
 
 const gamesFailed = computed(() => gamesStatus.value === 'error');
 
+/** 僅初次載入顯示全頁 spinner，refresh 時保留畫面 */
+const gamesInitialLoading = computed(
+  () => gamesPending.value && (gamesResponse.value?.data.user.id ?? 0) === 0,
+);
+
 const gamesErrorMessage = computed(() =>
   gamesError.value ? apiErrorUserMessage(gamesError.value) : '請稍後再試。',
 );
@@ -1359,6 +1378,11 @@ function fmtLocalDate(input?: string | null) {
 
 .game-edit-title {
   word-break: break-word;
+}
+
+.game-edit-cover {
+  border: 1px solid rgba(var(--v-theme-outline), 0.55);
+  overflow: hidden;
 }
 
 .game-create-autocomplete :deep(.v-field__input) {
