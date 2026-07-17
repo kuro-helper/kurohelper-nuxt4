@@ -71,8 +71,8 @@
             <v-chip label>更新時間：{{ fmtLocalDate(user.updatedAt) }}</v-chip>
           </div>
 
-          <div class="d-flex align-center justify-space-between flex-wrap ga-2 mb-4">
-            <div class="d-flex align-center flex-wrap ga-2 min-w-0">
+          <div class="game-toolbar d-flex align-center justify-space-between flex-wrap ga-2 mb-4">
+            <div class="game-toolbar__left d-flex align-center flex-wrap ga-2 min-w-0">
               <div class="text-h5 font-weight-bold">遊戲紀錄（UserGame）</div>
               <template v-if="!showPrivateGamesLock">
                 <v-btn
@@ -88,18 +88,34 @@
                     {{ statusFilterLabel }}
                   </v-tooltip>
                 </v-btn>
-                <v-chip
-                  v-if="statusFilter !== null"
-                  size="small"
-                  variant="tonal"
-                  :color="userGameStatusColor(statusFilter!)"
-                  label
-                >
-                  {{ statusFilterLabel }}
-                </v-chip>
+                <div class="status-filter-chip-slot">
+                  <v-chip
+                    v-if="statusFilter !== null"
+                    size="small"
+                    variant="tonal"
+                    :color="userGameStatusColor(statusFilter!)"
+                    label
+                  >
+                    {{ statusFilterLabel }}
+                  </v-chip>
+                </div>
+                <v-text-field
+                  v-model="nameKeyword"
+                  class="game-name-filter"
+                  density="compact"
+                  variant="outlined"
+                  hide-details
+                  clearable
+                  single-line
+                  placeholder="篩選遊戲名稱"
+                  prepend-inner-icon="mdi-magnify"
+                />
               </template>
             </div>
-            <div v-if="!showPrivateGamesLock" class="d-flex align-center flex-wrap ga-2">
+            <div
+              v-if="!showPrivateGamesLock"
+              class="game-toolbar__right d-flex align-center flex-wrap ga-2"
+            >
               <v-btn
                 v-if="canEditProfile"
                 color="primary"
@@ -189,11 +205,7 @@
             >
               <v-img :src="PLACEHOLDER_IMAGE_URL" alt="" max-width="120" class="mx-auto mb-4" />
               <p class="text-body-2 text-medium-emphasis mb-0">
-                {{
-                  statusFilter === null
-                    ? '尚無關聯遊戲資料。'
-                    : `無符合「${statusFilterLabel}」的遊戲資料。`
-                }}
+                {{ gamesEmptyMessage }}
               </p>
             </v-sheet>
 
@@ -812,6 +824,7 @@ const chunk = <T,>(items: T[], size: number) => {
 
 // 狀態篩選相關
 const statusFilter = ref<number | null>(null);
+const nameKeyword = ref('');
 
 const statusFilterOptions: { value: number | null; label: string }[] = [
   { value: null, label: '不篩選' },
@@ -834,8 +847,30 @@ function toggleStatusFilter() {
 }
 
 const filteredUserGames = computed(() => {
-  if (statusFilter.value === null) return userGames.value;
-  return userGames.value.filter((ug) => ug.status === statusFilter.value);
+  const keyword = nameKeyword.value.trim().toLocaleLowerCase();
+  return userGames.value.filter((ug) => {
+    if (statusFilter.value !== null && ug.status !== statusFilter.value) return false;
+    if (!keyword) return true;
+    return gameTitle(ug).toLocaleLowerCase().includes(keyword);
+  });
+});
+
+const gamesEmptyMessage = computed(() => {
+  const keyword = nameKeyword.value.trim();
+  if (keyword && statusFilter.value !== null) {
+    return `無符合「${statusFilterLabel.value}」且名稱含「${keyword}」的遊戲資料。`;
+  }
+  if (keyword) return `無名稱含「${keyword}」的遊戲資料。`;
+  if (statusFilter.value !== null) return `無符合「${statusFilterLabel.value}」的遊戲資料。`;
+  return '尚無關聯遊戲資料。';
+});
+
+watch(nameKeyword, () => {
+  gamePage.value = 0;
+});
+
+watch(statusFilter, () => {
+  gamePage.value = 0;
 });
 
 const VIEW_ORDER: Record<GameViewMode, number> = { card: 0, table: 1 };
@@ -1167,6 +1202,38 @@ function fmtLocalDate(input?: string | null) {
   border-radius: 999px;
   background: rgba(var(--v-theme-on-surface), 0.06);
   border: 1px solid rgba(var(--v-theme-on-surface), 0.1);
+}
+
+.game-toolbar__left {
+  flex: 1 1 auto;
+}
+
+.game-toolbar__right {
+  flex: 0 1 auto;
+  margin-left: auto;
+}
+
+.status-filter-chip-slot {
+  display: inline-flex;
+  align-items: center;
+  min-width: 5.75rem;
+  min-height: 24px;
+}
+
+.game-name-filter {
+  width: min(220px, 100%);
+  flex: 0 1 220px;
+  max-width: 220px;
+}
+
+.game-name-filter :deep(.v-field) {
+  min-height: 32px !important;
+}
+
+.game-name-filter :deep(.v-field__input) {
+  min-height: 32px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
 }
 
 .view-toggle .view-toggle-btn.v-btn {
