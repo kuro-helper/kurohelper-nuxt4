@@ -17,6 +17,8 @@
     "@fontsource/geist-sans": "^5.2.5",
     "@mdi/font": "^7.4.47",
     "date-fns": "^4.4.0",
+    "isomorphic-dompurify": "^3.19.0",
+    "marked": "^18.0.6",
     "nuxt": "^4.4.4",
     "vue": "^3.5.33",
     "vue-router": "^5.0.6",
