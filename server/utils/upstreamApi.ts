@@ -88,7 +88,7 @@ const throwUpstreamError = (path: string, err: unknown): never => {
 
 const callUpstream = async <T>(opts: {
   path: string;
-  method: 'GET' | 'POST' | 'PUT';
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
   query?: QueryObject;
   body?: unknown;
   event?: H3Event;
@@ -110,7 +110,9 @@ const callUpstream = async <T>(opts: {
         retry: 0,
         ...(opts.method === 'GET'
           ? { query: normalizeQuery(opts.query ?? {}) }
-          : { body: opts.body as Record<string, unknown> }),
+          : opts.method === 'DELETE'
+            ? {}
+            : { body: opts.body as Record<string, unknown> }),
       });
       forwardSetCookies(opts.event, res.headers);
       return res._data as T;
@@ -123,7 +125,9 @@ const callUpstream = async <T>(opts: {
       retry: 0,
       ...(opts.method === 'GET'
         ? { query: normalizeQuery(opts.query ?? {}) }
-        : { body: opts.body as Record<string, unknown> }),
+        : opts.method === 'DELETE'
+          ? {}
+          : { body: opts.body as Record<string, unknown> }),
     })) as T;
   } catch (err) {
     return throwUpstreamError(opts.path, err);
@@ -144,3 +148,7 @@ export const postUpstreamApi = <T>(path: string, body: unknown, event?: H3Event)
 /** PUT：body 轉發 kurohelper-api。傳 event 時會轉發 Cookie / Set-Cookie（登入 session 用）。 */
 export const putUpstreamApi = <T>(path: string, body: unknown, event?: H3Event): Promise<T> =>
   callUpstream<T>({ path, method: 'PUT', body, event });
+
+/** DELETE：轉發 kurohelper-api。傳 event 時會轉發 Cookie / Set-Cookie（登入 session 用）。 */
+export const deleteUpstreamApi = <T>(path: string, event?: H3Event): Promise<T> =>
+  callUpstream<T>({ path, method: 'DELETE', event });

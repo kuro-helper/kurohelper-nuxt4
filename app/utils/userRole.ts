@@ -34,6 +34,11 @@ export function isUserRoleDeveloper(role: number): boolean {
   return role === USER_ROLE.DEVELOPER;
 }
 
+/** 開發者或站主（可管理公告等後台功能） */
+export function isUserRoleStaff(role: number): boolean {
+  return isUserRoleDeveloper(role) || isUserRoleOwner(role);
+}
+
 export function isValidUserRole(role: number): boolean {
   return role >= USER_ROLE.USER && role <= USER_ROLE.OWNER;
 }

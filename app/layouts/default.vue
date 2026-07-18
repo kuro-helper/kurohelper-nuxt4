@@ -4,6 +4,8 @@
 
     <div class="layout-nav-spacer" />
 
+    <AnnouncementBar />
+
     <v-main>
       <slot />
       <NuxtRouteAnnouncer />
