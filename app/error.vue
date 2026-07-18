@@ -4,7 +4,11 @@ import type { NuxtError } from '#app';
 const props = defineProps<{ error: NuxtError }>();
 
 const code = computed(() => props.error?.statusCode ?? props.error?.status ?? 500);
-const message = computed(() => (code.value === 404 ? '找不到頁面。' : '請稍後再試。'));
+const message = computed(() => {
+  if (code.value === 404) return '找不到頁面。';
+  if (code.value === 403) return '你沒有權限查看此頁面。';
+  return '請稍後再試。';
+});
 </script>
 
 <template>
