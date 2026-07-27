@@ -67,8 +67,8 @@
           <v-divider class="mb-6" />
 
           <div class="d-flex flex-wrap ga-2 mb-6">
-            <v-chip label>建立時間：{{ fmtLocalDate(user.createdAt) }}</v-chip>
-            <v-chip label>更新時間：{{ fmtLocalDate(user.updatedAt) }}</v-chip>
+            <v-chip label>建立時間：{{ formatLocalDate(user.createdAt) }}</v-chip>
+            <v-chip label>更新時間：{{ formatLocalDate(user.updatedAt) }}</v-chip>
           </div>
 
           <div class="game-toolbar d-flex align-center justify-space-between flex-wrap ga-2 mb-4">
@@ -292,25 +292,25 @@
                               <div class="game-meta-row">
                                 <span class="game-meta-label">開始時間</span>
                                 <span class="game-meta-value">{{
-                                  fmtLocalDate(ug.startDate)
+                                  formatUserGameDate(ug.startDate)
                                 }}</span>
                               </div>
                               <div class="game-meta-row">
                                 <span class="game-meta-label">結束時間</span>
                                 <span class="game-meta-value">{{
-                                  fmtLocalDate(ug.finishedDate)
+                                  formatUserGameDate(ug.finishedDate)
                                 }}</span>
                               </div>
                               <div class="game-meta-row">
                                 <span class="game-meta-label">建立</span>
                                 <span class="game-meta-value text-medium-emphasis">{{
-                                  fmtLocalDate(ug.createdAt)
+                                  formatLocalDate(ug.createdAt)
                                 }}</span>
                               </div>
                               <div class="game-meta-row">
                                 <span class="game-meta-label">更新</span>
                                 <span class="game-meta-value text-medium-emphasis">{{
-                                  fmtLocalDate(ug.updatedAt)
+                                  formatLocalDate(ug.updatedAt)
                                 }}</span>
                               </div>
                             </div>
@@ -382,13 +382,13 @@
                             {{ userGameStatusLabel(ug.status) }}
                           </v-chip>
                         </td>
-                        <td class="text-caption">{{ fmtLocalDate(ug.startDate) }}</td>
-                        <td class="text-caption">{{ fmtLocalDate(ug.finishedDate) }}</td>
+                        <td class="text-caption">{{ formatUserGameDate(ug.startDate) }}</td>
+                        <td class="text-caption">{{ formatUserGameDate(ug.finishedDate) }}</td>
                         <td class="text-caption text-medium-emphasis">
-                          {{ fmtLocalDate(ug.createdAt) }}
+                          {{ formatLocalDate(ug.createdAt) }}
                         </td>
                         <td class="text-caption text-medium-emphasis">
-                          {{ fmtLocalDate(ug.updatedAt) }}
+                          {{ formatLocalDate(ug.updatedAt) }}
                         </td>
                       </tr>
                     </tbody>
@@ -601,8 +601,8 @@
             <v-divider />
 
             <div class="d-flex flex-wrap ga-2 text-caption text-medium-emphasis">
-              <span>建立：{{ fmtLocalDate(tableEditGame.createdAt) }}</span>
-              <span>更新：{{ fmtLocalDate(tableEditGame.updatedAt) }}</span>
+              <span>建立：{{ formatLocalDate(tableEditGame.createdAt) }}</span>
+              <span>更新：{{ formatLocalDate(tableEditGame.updatedAt) }}</span>
             </div>
 
             <v-btn
@@ -611,15 +611,61 @@
               size="large"
               class="text-none align-self-end mt-2"
               :loading="gameEditSubmitting"
-              :disabled="gameEditSubmitting || !!gameEditDateRangeError"
+              :disabled="gameEditSubmitting || gameDeleteSubmitting || !!gameEditDateRangeError"
             >
               確定更新
             </v-btn>
           </form>
         </v-card-text>
         <v-card-actions>
+          <v-btn
+            icon="mdi-delete-outline"
+            variant="text"
+            color="error"
+            :disabled="gameEditSubmitting || gameDeleteSubmitting"
+            aria-label="刪除遊戲紀錄"
+            @click="gameDeleteConfirmOpen = true"
+          />
           <v-spacer />
-          <v-btn variant="text" class="text-none" @click.stop="closeGameEditModal">關閉</v-btn>
+          <v-btn
+            variant="text"
+            class="text-none"
+            :disabled="gameDeleteSubmitting"
+            @click.stop="closeGameEditModal"
+          >
+            關閉
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="gameDeleteConfirmOpen" max-width="400" opacity="0.58">
+      <v-card rounded="xl" variant="flat" color="surface">
+        <v-card-title class="text-subtitle-1 font-weight-bold">確認刪除</v-card-title>
+        <v-card-text>
+          確定要刪除「<strong class="font-weight-bold">{{
+            tableEditGame ? gameTitle(tableEditGame) : ''
+          }}</strong
+          >」的遊戲紀錄嗎？此操作無法復原。
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn
+            variant="text"
+            class="text-none"
+            :disabled="gameDeleteSubmitting"
+            @click="gameDeleteConfirmOpen = false"
+          >
+            取消
+          </v-btn>
+          <v-btn
+            color="error"
+            class="text-none"
+            :loading="gameDeleteSubmitting"
+            @click="onGameDeleteConfirm"
+          >
+            刪除
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -631,7 +677,6 @@
 </template>
 
 <script setup lang="ts">
-import { formatISO, isAfter } from 'date-fns';
 import { authErrorMessage } from '~/composables/useAuth';
 import { apiErrorUserMessage, logApiError } from '~/utils/apiError';
 import { erogsGameCategoryChipColor } from '~/utils/erogsGameCategory';
@@ -684,6 +729,8 @@ const gameEditSnackbar = ref(false);
 const gameEditSnackbarText = ref('');
 const gameEditSnackbarColor = ref<'success' | 'info' | 'error'>('info');
 const gameEditSubmitting = ref(false);
+const gameDeleteSubmitting = ref(false);
+const gameDeleteConfirmOpen = ref(false);
 const gameCreateSubmitting = ref(false);
 
 type CreateUserGameForm = UpdateUserGameBody & {
@@ -764,9 +811,11 @@ const dateAdapter = useDate();
 function bindIsoDateField(form: DateRangeForm, key: keyof DateRangeForm) {
   return computed({
     get(): Date | null {
-      const raw = form[key]?.trim();
-      if (!raw || !/^\d{4}-\d{2}-\d{2}/.test(raw)) return null;
-      const date = dateAdapter.parseISO(raw.slice(0, 10)) as Date;
+      const dateOnly = parseUserGameDate(form[key]);
+      if (!dateOnly) return null;
+      const [y, m, d] = dateOnly.split('-').map(Number);
+      // 用「日曆日」建本地 Date，只給 date picker 顯示，不做時區換算
+      const date = new Date(y!, m! - 1, d!);
       return dateAdapter.isValid(date) ? date : null;
     },
     set(value: Date | null) {
@@ -774,7 +823,11 @@ function bindIsoDateField(form: DateRangeForm, key: keyof DateRangeForm) {
         form[key] = null;
         return;
       }
-      form[key] = formatISO(value, { representation: 'complete' });
+      // 取使用者選到的日曆日，固定寫成 UTC 午夜（不受瀏覽器時區影響）
+      const y = value.getFullYear();
+      const m = String(value.getMonth() + 1).padStart(2, '0');
+      const d = String(value.getDate()).padStart(2, '0');
+      form[key] = toUserGameDatePayload(`${y}-${m}-${d}`);
     },
   });
 }
@@ -790,13 +843,10 @@ const gameEditDates = bindIsoDateFields(gameEditForm);
 const gameCreateDates = bindIsoDateFields(gameCreateForm);
 
 function dateRangeError(startDate: string | null, finishedDate: string | null) {
-  const startRaw = startDate?.trim();
-  const endRaw = finishedDate?.trim();
-  if (!startRaw || !endRaw) return '';
-  const start = new Date(startRaw);
-  const end = new Date(endRaw);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return '';
-  return isAfter(start, end) ? '開始時間不能超過結束時間' : '';
+  const start = parseUserGameDate(startDate);
+  const end = parseUserGameDate(finishedDate);
+  if (!start || !end) return '';
+  return start > end ? '開始時間不能超過結束時間' : '';
 }
 
 const gameEditDateRangeError = computed(() =>
@@ -895,6 +945,7 @@ function toggleTableSort(key: TableSortKey) {
 }
 
 function closeGameEditModal() {
+  gameDeleteConfirmOpen.value = false;
   gameEditModalOpen.value = false;
   tableEditGame.value = null;
   Object.assign(gameEditForm, emptyGameEditForm());
@@ -936,8 +987,8 @@ const onGameCreateSubmit = async () => {
     status: gameCreateForm.status,
     wishListMark: gameCreateForm.wishListMark,
     blackListMark: gameCreateForm.blackListMark,
-    startDate: gameCreateForm.startDate,
-    finishedDate: gameCreateForm.finishedDate,
+    startDate: toUserGameDatePayload(gameCreateForm.startDate),
+    finishedDate: toUserGameDatePayload(gameCreateForm.finishedDate),
   };
 
   gameCreateSubmitting.value = true;
@@ -961,8 +1012,8 @@ function fillGameEditForm(ug: UserGameDto) {
   gameEditForm.status = ug.status;
   gameEditForm.wishListMark = ug.wishListMark;
   gameEditForm.blackListMark = ug.blackListMark;
-  gameEditForm.startDate = ug.startDate ?? null;
-  gameEditForm.finishedDate = ug.finishedDate ?? null;
+  gameEditForm.startDate = toUserGameDatePayload(ug.startDate);
+  gameEditForm.finishedDate = toUserGameDatePayload(ug.finishedDate);
 }
 
 function showGameEditSnackbar(text: string, color: 'success' | 'info' | 'error' = 'info') {
@@ -995,8 +1046,8 @@ const onGameEditSubmit = async () => {
     status: gameEditForm.status,
     wishListMark: gameEditForm.wishListMark,
     blackListMark: gameEditForm.blackListMark,
-    startDate: gameEditForm.startDate,
-    finishedDate: gameEditForm.finishedDate,
+    startDate: toUserGameDatePayload(gameEditForm.startDate),
+    finishedDate: toUserGameDatePayload(gameEditForm.finishedDate),
   };
 
   gameEditSubmitting.value = true;
@@ -1016,8 +1067,31 @@ const onGameEditSubmit = async () => {
   }
 };
 
+async function onGameDeleteConfirm() {
+  const game = tableEditGame.value;
+  if (!game || gameDeleteSubmitting.value) return;
+
+  gameDeleteSubmitting.value = true;
+  try {
+    await $fetch<ApiResponse<null>>(
+      `/api/user/${encodeURIComponent(idParam.value)}/game/${encodeURIComponent(String(game.gameErogsId))}`,
+      { method: 'DELETE' },
+    );
+    gameDeleteConfirmOpen.value = false;
+    closeGameEditModal();
+    await refreshGames();
+    showGameEditSnackbar('遊戲紀錄已刪除', 'success');
+  } catch (err) {
+    logApiError(err);
+    showGameEditSnackbar(authErrorMessage(err, '刪除失敗，請稍後再試'), 'error');
+  } finally {
+    gameDeleteSubmitting.value = false;
+  }
+}
+
 watch(gameEditModalOpen, (open) => {
   if (!open) {
+    gameDeleteConfirmOpen.value = false;
     tableEditGame.value = null;
     Object.assign(gameEditForm, emptyGameEditForm());
   }
@@ -1179,14 +1253,28 @@ function gameMarks(ug: UserGameDto) {
   return marks.join(' ');
 }
 
-function fmtLocalDate(input?: string | null) {
+// 遊戲開始／結束日期：只取日曆日，寫入固定為 UTC 午夜
+function parseUserGameDate(input?: string | null) {
+  const match = /^(\d{4}-\d{2}-\d{2})/.exec(input?.trim() ?? '');
+  return match?.[1] ?? null;
+}
+
+function toUserGameDatePayload(input?: string | null) {
+  const date = parseUserGameDate(input);
+  return date ? `${date}T00:00:00Z` : null;
+}
+
+function formatUserGameDate(input?: string | null) {
   if (!input || input === '—') return '—';
-  const trimmed = input.trim();
-  const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
-  const date = dateOnlyMatch
-    ? new Date(Number(dateOnlyMatch[1]), Number(dateOnlyMatch[2]) - 1, Number(dateOnlyMatch[3]))
-    : new Date(trimmed);
-  if (Number.isNaN(date.getTime())) return trimmed;
+  const date = parseUserGameDate(input);
+  return date ? date.replaceAll('-', '/') : input.trim();
+}
+
+// 建立／更新時間：轉成瀏覽器本地日期
+function formatLocalDate(input?: string | null) {
+  if (!input || input === '—') return '—';
+  const date = new Date(input);
+  if (Number.isNaN(date.getTime())) return input.trim();
   return date.toLocaleDateString('zh-TW', {
     year: 'numeric',
     month: '2-digit',
