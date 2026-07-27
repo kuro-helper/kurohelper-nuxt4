@@ -611,15 +611,61 @@
               size="large"
               class="text-none align-self-end mt-2"
               :loading="gameEditSubmitting"
-              :disabled="gameEditSubmitting || !!gameEditDateRangeError"
+              :disabled="gameEditSubmitting || gameDeleteSubmitting || !!gameEditDateRangeError"
             >
               確定更新
             </v-btn>
           </form>
         </v-card-text>
         <v-card-actions>
+          <v-btn
+            icon="mdi-delete-outline"
+            variant="text"
+            color="error"
+            :disabled="gameEditSubmitting || gameDeleteSubmitting"
+            aria-label="刪除遊戲紀錄"
+            @click="gameDeleteConfirmOpen = true"
+          />
           <v-spacer />
-          <v-btn variant="text" class="text-none" @click.stop="closeGameEditModal">關閉</v-btn>
+          <v-btn
+            variant="text"
+            class="text-none"
+            :disabled="gameDeleteSubmitting"
+            @click.stop="closeGameEditModal"
+          >
+            關閉
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="gameDeleteConfirmOpen" max-width="400" opacity="0.58">
+      <v-card rounded="xl" variant="flat" color="surface">
+        <v-card-title class="text-subtitle-1 font-weight-bold">確認刪除</v-card-title>
+        <v-card-text>
+          確定要刪除「<strong class="font-weight-bold">{{
+            tableEditGame ? gameTitle(tableEditGame) : ''
+          }}</strong
+          >」的遊戲紀錄嗎？此操作無法復原。
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn
+            variant="text"
+            class="text-none"
+            :disabled="gameDeleteSubmitting"
+            @click="gameDeleteConfirmOpen = false"
+          >
+            取消
+          </v-btn>
+          <v-btn
+            color="error"
+            class="text-none"
+            :loading="gameDeleteSubmitting"
+            @click="onGameDeleteConfirm"
+          >
+            刪除
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -683,6 +729,8 @@ const gameEditSnackbar = ref(false);
 const gameEditSnackbarText = ref('');
 const gameEditSnackbarColor = ref<'success' | 'info' | 'error'>('info');
 const gameEditSubmitting = ref(false);
+const gameDeleteSubmitting = ref(false);
+const gameDeleteConfirmOpen = ref(false);
 const gameCreateSubmitting = ref(false);
 
 type CreateUserGameForm = UpdateUserGameBody & {
@@ -897,6 +945,7 @@ function toggleTableSort(key: TableSortKey) {
 }
 
 function closeGameEditModal() {
+  gameDeleteConfirmOpen.value = false;
   gameEditModalOpen.value = false;
   tableEditGame.value = null;
   Object.assign(gameEditForm, emptyGameEditForm());
@@ -1018,8 +1067,31 @@ const onGameEditSubmit = async () => {
   }
 };
 
+async function onGameDeleteConfirm() {
+  const game = tableEditGame.value;
+  if (!game || gameDeleteSubmitting.value) return;
+
+  gameDeleteSubmitting.value = true;
+  try {
+    await $fetch<ApiResponse<null>>(
+      `/api/user/${encodeURIComponent(idParam.value)}/game/${encodeURIComponent(String(game.gameErogsId))}`,
+      { method: 'DELETE' },
+    );
+    gameDeleteConfirmOpen.value = false;
+    closeGameEditModal();
+    await refreshGames();
+    showGameEditSnackbar('遊戲紀錄已刪除', 'success');
+  } catch (err) {
+    logApiError(err);
+    showGameEditSnackbar(authErrorMessage(err, '刪除失敗，請稍後再試'), 'error');
+  } finally {
+    gameDeleteSubmitting.value = false;
+  }
+}
+
 watch(gameEditModalOpen, (open) => {
   if (!open) {
+    gameDeleteConfirmOpen.value = false;
     tableEditGame.value = null;
     Object.assign(gameEditForm, emptyGameEditForm());
   }
