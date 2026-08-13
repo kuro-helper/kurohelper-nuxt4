@@ -704,7 +704,7 @@ useSeoMeta({ robots: 'noindex, nofollow, noarchive' });
 
 const gameOf = unwrapErogsAutocompleteItem;
 
-const PLACEHOLDER_IMAGE_URL = 'https://image.kurohelper.com/docs/neneGIF.gif';
+const PLACEHOLDER_IMAGE_URL = 'https://cdn.kurohelper.com/docs/neneGIF.gif';
 
 type GameViewMode = 'card' | 'table';
 type TableSortKey = 'startDate' | 'finishedDate' | 'createdAt' | 'updatedAt';
