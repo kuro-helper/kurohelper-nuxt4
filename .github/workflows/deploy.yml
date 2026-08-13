@@ -1,0 +1,25 @@
+name: Nuxt Deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build:
+    permissions:
+      contents: read
+      actions: write
+    uses: kuro-helper/.github/.github/workflows/nuxt-build.yml@main
+    with:
+      upload_output: true
+
+  deploy:
+    needs: build
+    permissions:
+      contents: read
+      actions: write
+    uses: kuro-helper/.github/.github/workflows/nuxt-deploy.yml@main
+    secrets: inherit
