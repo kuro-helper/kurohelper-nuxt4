@@ -1,4 +1,4 @@
-name: Nuxt Deploy
+name: Deploy
 
 on:
   workflow_dispatch:
