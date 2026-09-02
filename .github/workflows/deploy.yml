@@ -22,4 +22,6 @@ jobs:
       contents: read
       actions: write
     uses: kuro-helper/.github/.github/workflows/nuxt-deploy.yml@main
+    with:
+      systemd_service: ${{ github.event.repository.name }}
     secrets: inherit
