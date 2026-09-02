@@ -64,6 +64,8 @@
             </p>
           </v-sheet>
 
+          <UserGameBrandChart v-if="!showPrivateGamesLock" :games="userGames" class="mb-6" />
+
           <v-divider class="mb-6" />
 
           <div class="d-flex flex-wrap ga-2 mb-6">
@@ -689,6 +691,7 @@ import {
   userGameStatusLabel,
   userGameStatusThemeStyle,
 } from '~/utils/userGameStatus';
+import { formatUserGameDate, parseUserGameDate, toUserGameDatePayload } from '~/utils/userGameDate';
 import { useDisplay } from 'vuetify';
 import type {
   ApiResponse,
@@ -1251,23 +1254,6 @@ function gameMarks(ug: UserGameDto) {
   if (ug.wishListMark) marks.push('❤️');
   if (ug.blackListMark) marks.push('🚫');
   return marks.join(' ');
-}
-
-// 遊戲開始／結束日期：只取日曆日，寫入固定為 UTC 午夜
-function parseUserGameDate(input?: string | null) {
-  const match = /^(\d{4}-\d{2}-\d{2})/.exec(input?.trim() ?? '');
-  return match?.[1] ?? null;
-}
-
-function toUserGameDatePayload(input?: string | null) {
-  const date = parseUserGameDate(input);
-  return date ? `${date}T00:00:00Z` : null;
-}
-
-function formatUserGameDate(input?: string | null) {
-  if (!input || input === '—') return '—';
-  const date = parseUserGameDate(input);
-  return date ? date.replaceAll('-', '/') : input.trim();
 }
 
 // 建立／更新時間：轉成瀏覽器本地日期
