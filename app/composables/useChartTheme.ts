@@ -3,7 +3,16 @@ import { useTheme } from 'vuetify';
 import { resolveChartThemeTokens } from '~/config/chartTheme';
 import { hexToRgba, themeColorToString } from '~/utils/chartColor';
 
-const CHART_COLOR_KEYS = ['primary', 'secondary', 'success', 'warning', 'error', 'info'] as const;
+const CHART_COLOR_KEYS = [
+  'chart-1',
+  'chart-2',
+  'chart-3',
+  'chart-4',
+  'chart-5',
+  'chart-6',
+  'chart-7',
+  'chart-8',
+] as const;
 
 const EMPHASIS_SHADOW_COLOR = '#000000';
 

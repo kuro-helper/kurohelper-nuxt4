@@ -1,7 +1,9 @@
 import { addMonths, subMonths } from 'date-fns';
 import type { Ref } from 'vue';
 import type { UserGameDto } from '~/types/user-api';
-import { aggregateBrandStats } from '~/utils/userGameBrandStats';
+import { aggregateAllBrandStats, aggregateBrandStats } from '~/utils/userGameBrandStats';
+
+export type BrandChartMode = 'overview' | 'month';
 
 export type SelectedMonth = {
   year: number;
@@ -19,7 +21,7 @@ function shiftMonth(selected: SelectedMonth, delta: number): SelectedMonth {
   return { year: next.getFullYear(), month: next.getMonth() + 1 };
 }
 
-export function useUserGameBrandStats(games: Ref<UserGameDto[]>) {
+export function useUserGameBrandStats(games: Ref<UserGameDto[]>, mode: Ref<BrandChartMode>) {
   const selectedMonth = ref<SelectedMonth>(currentMonth());
 
   const prevMonth = () => {
@@ -35,7 +37,9 @@ export function useUserGameBrandStats(games: Ref<UserGameDto[]>) {
   );
 
   const stats = computed(() =>
-    aggregateBrandStats(games.value, selectedMonth.value.year, selectedMonth.value.month),
+    mode.value === 'overview'
+      ? aggregateAllBrandStats(games.value)
+      : aggregateBrandStats(games.value, selectedMonth.value.year, selectedMonth.value.month),
   );
 
   return { selectedMonth, prevMonth, nextMonth, monthLabel, stats };
