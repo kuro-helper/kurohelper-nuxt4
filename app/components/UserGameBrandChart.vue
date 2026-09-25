@@ -173,7 +173,7 @@ const chartOption = computed<EChartsOption>(() => {
         ),
         label: {
           color: onSurface,
-          formatter: '{b}\n{d}%',
+          formatter: '{b} ({d}%)',
         },
         emphasis: {
           itemStyle: {
