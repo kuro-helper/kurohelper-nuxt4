@@ -12,6 +12,10 @@ const CHART_COLOR_KEYS = [
   'chart-6',
   'chart-7',
   'chart-8',
+  'chart-9',
+  'chart-10',
+  'chart-11',
+  'chart-12',
 ] as const;
 
 const EMPHASIS_SHADOW_COLOR = '#000000';

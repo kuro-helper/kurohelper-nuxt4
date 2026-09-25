@@ -24,7 +24,7 @@ export type BrandStatsResult = {
 
 const UNKNOWN_BRAND_NAME = '未知品牌';
 const UNKNOWN_GAME_NAME = '未知遊戲';
-export const MAX_BRAND_CHART_ITEMS = 8;
+export const MAX_BRAND_CHART_ITEMS = 12;
 
 export function isFinishedInMonth(
   finishedDate: string | null | undefined,
