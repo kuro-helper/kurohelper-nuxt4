@@ -77,6 +77,8 @@ import { apiErrorUserMessage, logApiError } from '~/utils/apiError';
 import type { BrandErogsItem } from '~/types/erogs-api';
 import type { ApiResponse, FetchErrorLike } from '~/types/user-api';
 
+definePageMeta({ middleware: 'auth' });
+
 const emptyApiResponse = (): ApiResponse<BrandErogsItem[]> => ({
   message: '',
   data: [],
@@ -101,9 +103,7 @@ const brandsErrorMessage = computed(() =>
   brandsError.value ? apiErrorUserMessage(brandsError.value) : '請稍後再試。',
 );
 
-const brands = computed(() =>
-  [...(brandsResponse.value?.data ?? [])].sort((a, b) => a.id - b.id),
-);
+const brands = computed(() => [...(brandsResponse.value?.data ?? [])].sort((a, b) => a.id - b.id));
 
 function brandInitials(item: BrandErogsItem) {
   const name = item.name?.trim() || '';

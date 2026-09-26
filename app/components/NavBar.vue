@@ -194,13 +194,13 @@ const canManageAnnouncement = computed(() => {
   return !!u && isUserRoleStaff(u.role);
 });
 
-const navItems = [
+const navItems = computed(() => [
   { to: '/', label: '首頁', icon: 'mdi-home-outline' },
   { to: '/search', label: '查詢', icon: 'mdi-magnify', disabled: true },
-  { to: '/game/1001', label: '遊戲詳情', icon: 'mdi-gamepad-variant-outline', disabled: true },
+  { to: '/brand', label: '品牌詳情', icon: 'mdi-domain', disabled: !isLoggedIn.value },
   { to: '/user', label: '使用者', icon: 'mdi-account-outline' },
   { to: '/register', label: '註冊', icon: 'mdi-account-plus-outline' },
-];
+]);
 
 const isNavActive = (to: string) => {
   if (to === '/') return route.path === '/';
