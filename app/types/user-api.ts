@@ -28,6 +28,7 @@ export type UserGameErogsDto = {
   brandErogsId: number;
   name: string;
   image: string;
+  imageFromGame: boolean;
   createdAt: string;
   updatedAt: string;
   brandErogs?: UserGameBrandErogsDto;

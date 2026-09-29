@@ -543,7 +543,14 @@
                   height="72"
                   cover
                   rounded="lg"
-                  class="flex-shrink-0 game-edit-cover"
+                  :class="[
+                    'flex-shrink-0 game-edit-cover',
+                    canEditGameCover(tableEditGame) ? 'game-edit-cover--clickable' : '',
+                  ]"
+                  :role="canEditGameCover(tableEditGame) ? 'button' : undefined"
+                  :tabindex="canEditGameCover(tableEditGame) ? 0 : undefined"
+                  :title="canEditGameCover(tableEditGame) ? '點擊以編輯備選圖' : undefined"
+                  @click.stop="onPlaceholderCoverClick"
                 >
                   <template #placeholder>
                     <div class="fill-height game-img-placeholder" />
@@ -641,6 +648,85 @@
       </v-card>
     </v-dialog>
 
+    <v-dialog v-model="gameBackupModalOpen" max-width="480" opacity="0.58" scroll-strategy="block">
+      <v-card rounded="xl" variant="flat" color="surface">
+        <v-card-title class="text-h6">備選封面</v-card-title>
+        <v-card-text>
+          <form class="d-flex flex-column ga-4" @submit.prevent="onGameBackupSubmit">
+            <div class="d-flex flex-wrap ga-2 text-body-2">
+              <v-chip size="small" variant="tonal" label>Game ID：{{ gameBackupForm.id }}</v-chip>
+              <v-chip
+                v-if="gameBackupForm.erogsId != null"
+                size="small"
+                variant="tonal"
+                color="info"
+                label
+              >
+                Erogs ID：{{ gameBackupForm.erogsId }}
+              </v-chip>
+            </div>
+
+            <v-text-field
+              v-model="gameBackupForm.imageUrl"
+              label="圖片 URL"
+              hide-details="auto"
+              autocomplete="off"
+            />
+
+            <div>
+              <div class="text-caption text-medium-emphasis mb-2">預覽</div>
+              <v-img
+                :src="gameBackupForm.imageUrl.trim() || PLACEHOLDER_IMAGE_URL"
+                max-height="280"
+                contain
+                rounded="lg"
+                class="game-backup-preview"
+              >
+                <template #placeholder>
+                  <div class="fill-height game-img-placeholder" />
+                </template>
+                <template #error>
+                  <div
+                    class="fill-height d-flex align-center justify-center text-caption text-medium-emphasis"
+                  >
+                    無法載入圖片
+                  </div>
+                </template>
+              </v-img>
+            </div>
+
+            <div class="d-flex flex-wrap ga-2 text-caption text-medium-emphasis">
+              <span>更新者：{{ gameBackupForm.updatedUserName || '—' }}</span>
+              <span>建立：{{ formatLocalDate(gameBackupForm.createdAt) }}</span>
+              <span>更新：{{ formatLocalDate(gameBackupForm.updatedAt) }}</span>
+            </div>
+
+            <v-btn
+              color="primary"
+              type="submit"
+              size="large"
+              class="text-none align-self-end"
+              :loading="gameBackupSubmitting"
+              :disabled="gameBackupSubmitting"
+            >
+              儲存備選圖
+            </v-btn>
+          </form>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn
+            variant="text"
+            class="text-none"
+            :disabled="gameBackupSubmitting"
+            @click="gameBackupModalOpen = false"
+          >
+            關閉
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <v-dialog v-model="gameDeleteConfirmOpen" max-width="400" opacity="0.58">
       <v-card rounded="xl" variant="flat" color="surface">
         <v-card-title class="text-subtitle-1 font-weight-bold">確認刪除</v-card-title>
@@ -702,6 +788,7 @@ import type {
   UserGameDto,
 } from '~/types/user-api';
 import type { ErogsGameAutocompleteItem } from '~/types/game-erogs-api';
+import type { GameItem } from '~/types/kurohelper-api';
 
 useSeoMeta({ robots: 'noindex, nofollow, noarchive' });
 
@@ -735,6 +822,30 @@ const gameEditSubmitting = ref(false);
 const gameDeleteSubmitting = ref(false);
 const gameDeleteConfirmOpen = ref(false);
 const gameCreateSubmitting = ref(false);
+const gameBackupModalOpen = ref(false);
+const gameBackupEnsuring = ref(false);
+const gameBackupSubmitting = ref(false);
+const gameImageFallbackByErogsId = ref<Record<number, string>>({});
+
+type GameBackupForm = {
+  id: number;
+  erogsId: number | null;
+  imageUrl: string;
+  updatedUserName: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+const emptyGameBackupForm = (): GameBackupForm => ({
+  id: 0,
+  erogsId: null,
+  imageUrl: '',
+  updatedUserName: '',
+  createdAt: '',
+  updatedAt: '',
+});
+
+const gameBackupForm = reactive<GameBackupForm>(emptyGameBackupForm());
 
 type CreateUserGameForm = UpdateUserGameBody & {
   gameErogsId: number | null;
@@ -1037,6 +1148,97 @@ function onGameEditClick(ug: UserGameDto) {
   gameEditModalOpen.value = true;
 }
 
+function fillGameBackupForm(item: GameItem) {
+  gameBackupForm.id = item.id;
+  gameBackupForm.erogsId = item.erogsId;
+  gameBackupForm.imageUrl = item.imageUrl ?? '';
+  gameBackupForm.updatedUserName = item.updatedUserName ?? '';
+  gameBackupForm.createdAt = item.createdAt;
+  gameBackupForm.updatedAt = item.updatedAt;
+}
+
+function setGameImageFallback(erogsId: number, imageUrl: string) {
+  const url = imageUrl.trim();
+  if (!url) return;
+  gameImageFallbackByErogsId.value[erogsId] = url;
+}
+
+function clearGameImageFallback(erogsId: number) {
+  gameImageFallbackByErogsId.value[erogsId] = '';
+}
+
+function canEditGameCover(ug: UserGameDto) {
+  // API：imageFromGame=true 表示封面走 games 路徑（erogs 無圖）
+  if (ug.gameErogs?.imageFromGame) return true;
+  // ensure／更新後、尚未 refresh 時的本地 fallback
+  return !!gameImageFallbackByErogsId.value[ug.gameErogsId]?.trim();
+}
+
+async function onPlaceholderCoverClick() {
+  const ug = tableEditGame.value;
+  if (!ug || !canEditGameCover(ug) || gameBackupEnsuring.value) return;
+
+  gameBackupEnsuring.value = true;
+  try {
+    const res = await $fetch<ApiResponse<GameItem>>('/api/kurohelper/game/ensure', {
+      method: 'POST',
+      body: { erogsId: ug.gameErogsId },
+    });
+    if (!res.data) {
+      showGameEditSnackbar(res.message || '查詢備選圖失敗，請稍後再試', 'error');
+      return;
+    }
+    fillGameBackupForm(res.data);
+    if (res.data.erogsId != null) {
+      setGameImageFallback(res.data.erogsId, res.data.imageUrl);
+    } else {
+      setGameImageFallback(ug.gameErogsId, res.data.imageUrl);
+    }
+    gameBackupModalOpen.value = true;
+  } catch (err) {
+    logApiError(err);
+    showGameEditSnackbar(authErrorMessage(err, '查詢備選圖失敗，請稍後再試'), 'error');
+  } finally {
+    gameBackupEnsuring.value = false;
+  }
+}
+
+async function onGameBackupSubmit() {
+  if (!gameBackupForm.id || gameBackupSubmitting.value) return;
+
+  gameBackupSubmitting.value = true;
+  try {
+    const res = await $fetch<ApiResponse<GameItem>>(
+      `/api/kurohelper/game/${encodeURIComponent(String(gameBackupForm.id))}`,
+      {
+        method: 'PUT',
+        body: { imageUrl: gameBackupForm.imageUrl.trim() },
+      },
+    );
+    if (!res.data) {
+      showGameEditSnackbar(res.message || '更新備選圖失敗，請稍後再試', 'error');
+      return;
+    }
+    fillGameBackupForm(res.data);
+    const erogsId = res.data.erogsId ?? tableEditGame.value?.gameErogsId;
+    if (erogsId != null) {
+      const url = res.data.imageUrl.trim();
+      if (url) {
+        setGameImageFallback(erogsId, url);
+      } else {
+        clearGameImageFallback(erogsId);
+      }
+    }
+    gameBackupModalOpen.value = false;
+    showGameEditSnackbar('備選圖已更新', 'success');
+  } catch (err) {
+    logApiError(err);
+    showGameEditSnackbar(authErrorMessage(err, '更新備選圖失敗，請稍後再試'), 'error');
+  } finally {
+    gameBackupSubmitting.value = false;
+  }
+}
+
 const onGameEditSubmit = async () => {
   const game = tableEditGame.value;
   if (!game) return;
@@ -1095,8 +1297,16 @@ async function onGameDeleteConfirm() {
 watch(gameEditModalOpen, (open) => {
   if (!open) {
     gameDeleteConfirmOpen.value = false;
+    gameBackupModalOpen.value = false;
     tableEditGame.value = null;
     Object.assign(gameEditForm, emptyGameEditForm());
+    Object.assign(gameBackupForm, emptyGameBackupForm());
+  }
+});
+
+watch(gameBackupModalOpen, (open) => {
+  if (!open) {
+    Object.assign(gameBackupForm, emptyGameBackupForm());
   }
 });
 
@@ -1241,7 +1451,10 @@ const initials = computed(() => {
 
 function gameImage(ug: UserGameDto) {
   const image = ug.gameErogs?.image?.trim();
-  return image || PLACEHOLDER_IMAGE_URL;
+  if (image) return image;
+  const fallback = gameImageFallbackByErogsId.value[ug.gameErogsId]?.trim();
+  if (fallback) return fallback;
+  return PLACEHOLDER_IMAGE_URL;
 }
 
 function gameTitle(ug: UserGameDto) {
@@ -1402,6 +1615,11 @@ function formatLocalDate(input?: string | null) {
   background: rgba(var(--v-theme-on-surface), 0.06);
 }
 
+.game-backup-preview {
+  min-height: 120px;
+  background: rgba(var(--v-theme-on-surface), 0.04);
+}
+
 /* 左右滑動切換：往後（卡片→表格）新內容自右側進、舊內容往左離開 */
 .slide-next-enter-active,
 .slide-next-leave-active,
@@ -1558,6 +1776,21 @@ function formatLocalDate(input?: string | null) {
 .game-edit-cover {
   border: 1px solid rgba(var(--v-theme-outline), 0.55);
   overflow: hidden;
+}
+
+.game-edit-cover--clickable {
+  cursor: pointer;
+  transition:
+    box-shadow 0.2s ease,
+    outline-color 0.2s ease;
+}
+
+.game-edit-cover--clickable:hover {
+  outline: 2px solid rgba(var(--v-theme-primary), 0.65);
+  outline-offset: 2px;
+  box-shadow:
+    0 0 0 4px rgba(var(--v-theme-primary), 0.18),
+    0 0 18px 4px rgba(var(--v-theme-primary), 0.35);
 }
 
 .game-create-autocomplete :deep(.v-field__input) {

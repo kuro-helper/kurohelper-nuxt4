@@ -12,6 +12,7 @@ export type GameErogsItem = {
   brandErogsId: number;
   name: string;
   image: string;
+  imageFromGame: boolean;
   category: string;
   createdAt: string;
   updatedAt: string;
