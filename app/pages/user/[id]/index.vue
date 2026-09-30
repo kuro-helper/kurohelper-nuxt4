@@ -59,9 +59,12 @@
 
           <v-sheet rounded="xl" border color="surface-variant" class="pa-5 mb-6">
             <div class="text-subtitle-2 mb-2">說明／簡介</div>
-            <p class="text-body-1 text-medium-emphasis mb-0">
-              {{ user.description || '（無）' }}
-            </p>
+            <MarkdownContent
+              v-if="user.description"
+              :source="user.description"
+              class="text-medium-emphasis"
+            />
+            <p v-else class="text-body-1 text-medium-emphasis mb-0">（無）</p>
           </v-sheet>
 
           <UserGameBrandChart v-if="!showPrivateGamesLock" :games="userGames" class="mb-6" />
