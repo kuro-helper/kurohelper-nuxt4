@@ -30,24 +30,12 @@
         <v-progress-circular indeterminate color="primary" size="32" />
       </div>
 
-      <v-sheet
+      <LoadErrorState
         v-else-if="finishedFailed"
-        rounded="xl"
-        border
-        color="surface-variant"
-        class="finished-games-state pa-8 text-center"
-      >
-        <v-icon size="48" color="error" class="mb-4">mdi-alert-circle-outline</v-icon>
-        <p class="text-body-1 font-weight-medium mb-4">{{ finishedErrorMessage }}</p>
-        <v-btn
-          color="primary"
-          variant="tonal"
-          prepend-icon="mdi-refresh"
-          @click="refreshFinished()"
-        >
-          重試
-        </v-btn>
-      </v-sheet>
+        :message="finishedErrorMessage"
+        detail="無法載入最近遊玩完畢，請稍後再試。"
+        @retry="refreshFinished()"
+      />
 
       <v-sheet
         v-else-if="finishedGames.length === 0"
@@ -120,19 +108,12 @@
       <v-progress-circular indeterminate color="primary" size="40" />
     </div>
 
-    <v-sheet
+    <LoadErrorState
       v-else-if="usersFailed"
-      rounded="xl"
-      border
-      color="surface-variant"
-      class="users-error-state pa-8 text-center"
-    >
-      <v-icon size="48" color="error" class="mb-4">mdi-alert-circle-outline</v-icon>
-      <p class="text-body-1 font-weight-medium mb-4">{{ usersErrorMessage }}</p>
-      <v-btn color="primary" variant="tonal" prepend-icon="mdi-refresh" @click="refreshUsers()">
-        重試
-      </v-btn>
-    </v-sheet>
+      :message="usersErrorMessage"
+      detail="無法載入使用者列表，請稍後再試。"
+      @retry="refreshUsers()"
+    />
 
     <v-sheet
       v-else-if="users.length === 0"
@@ -417,7 +398,6 @@ function userInitials(item: UserItem) {
 }
 
 .empty-state,
-.users-error-state,
 .finished-games-state {
   border-style: dashed;
 }

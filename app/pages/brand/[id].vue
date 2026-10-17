@@ -10,20 +10,12 @@
       <v-progress-circular indeterminate color="primary" size="40" />
     </div>
 
-    <v-sheet
+    <LoadErrorState
       v-else-if="brandFailed"
-      rounded="xl"
-      border
-      color="surface-variant"
-      class="brand-detail-state pa-8 text-center"
-    >
-      <v-icon size="48" color="error" class="mb-4">mdi-alert-circle-outline</v-icon>
-      <p class="text-body-1 font-weight-medium mb-2">{{ brandErrorMessage }}</p>
-      <p class="text-body-2 text-medium-emphasis mb-4">無法載入品牌資料，請稍後再試。</p>
-      <v-btn color="primary" variant="tonal" prepend-icon="mdi-refresh" @click="refreshBrand()">
-        重試
-      </v-btn>
-    </v-sheet>
+      :message="brandErrorMessage"
+      detail="無法載入品牌資料，請稍後再試。"
+      @retry="refreshBrand()"
+    />
 
     <v-sheet
       v-else-if="!brand"
@@ -116,20 +108,12 @@
         <v-progress-circular indeterminate color="primary" size="40" />
       </div>
 
-      <v-sheet
+      <LoadErrorState
         v-else-if="gamesFailed"
-        rounded="xl"
-        border
-        color="surface-variant"
-        class="brand-detail-state pa-8 text-center"
-      >
-        <v-icon size="48" color="error" class="mb-4">mdi-alert-circle-outline</v-icon>
-        <p class="text-body-1 font-weight-medium mb-2">{{ gamesErrorMessage }}</p>
-        <p class="text-body-2 text-medium-emphasis mb-4">無法載入遊戲列表，請稍後再試。</p>
-        <v-btn color="primary" variant="tonal" prepend-icon="mdi-refresh" @click="refreshGames()">
-          重試
-        </v-btn>
-      </v-sheet>
+        :message="gamesErrorMessage"
+        detail="無法載入遊戲列表，請稍後再試。"
+        @retry="refreshGames()"
+      />
 
       <v-sheet
         v-else-if="games.length === 0"

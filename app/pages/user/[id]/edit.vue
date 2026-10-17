@@ -27,18 +27,12 @@
         <v-progress-circular indeterminate color="primary" size="40" />
       </div>
 
-      <v-sheet
+      <LoadErrorState
         v-else-if="profileFailed"
-        rounded="xl"
-        border
-        color="surface-variant"
-        class="pa-8 text-center"
-      >
-        <p class="text-body-1 font-weight-medium mb-4">{{ profileErrorMessage }}</p>
-        <v-btn color="primary" variant="tonal" prepend-icon="mdi-refresh" @click="refreshProfile()">
-          重試
-        </v-btn>
-      </v-sheet>
+        :message="profileErrorMessage"
+        detail="無法載入使用者資料，請稍後再試。"
+        @retry="refreshProfile()"
+      />
 
       <form v-else class="d-flex flex-column ga-6" @submit.prevent="onSubmit">
         <div class="d-flex flex-column align-center ga-3">
@@ -176,7 +170,7 @@ watch(profileError, (err) => {
 
 const profileFailed = computed(() => profileStatus.value === 'error');
 const profileErrorMessage = computed(() =>
-  profileError.value ? apiErrorUserMessage(profileError.value) : '無法載入使用者資料，請稍後再試。',
+  profileError.value ? apiErrorUserMessage(profileError.value) : '請稍後再試。',
 );
 
 const form = reactive({

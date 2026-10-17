@@ -18,20 +18,12 @@
       <p class="text-body-2 text-medium-emphasis mb-0">遊戲 ID {{ idParam }}</p>
     </v-sheet>
 
-    <v-sheet
+    <LoadErrorState
       v-else-if="failed"
-      rounded="xl"
-      border
-      color="surface-variant"
-      class="game-state pa-8 text-center"
-    >
-      <v-icon size="48" color="error" class="mb-4">mdi-alert-circle-outline</v-icon>
-      <p class="text-body-1 font-weight-medium mb-2">{{ errorMessage }}</p>
-      <p class="text-body-2 text-medium-emphasis mb-4">無法載入遊戲資料，請稍後再試。</p>
-      <v-btn color="primary" variant="tonal" prepend-icon="mdi-refresh" @click="refresh()">
-        重試
-      </v-btn>
-    </v-sheet>
+      :message="errorMessage"
+      detail="無法載入遊戲資料，請稍後再試。"
+      @retry="refresh()"
+    />
 
     <v-sheet
       v-else-if="!game"
