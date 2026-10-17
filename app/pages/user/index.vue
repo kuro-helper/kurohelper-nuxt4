@@ -1,5 +1,100 @@
 <template>
   <v-container max-width="lg" class="py-8 px-4">
+    <section class="finished-games mb-8">
+      <div class="d-flex flex-wrap align-center ga-2 mb-4">
+        <h2 class="text-h6 font-weight-bold mb-0">最近遊玩完畢</h2>
+        <template v-if="finishedPages.length > 1">
+          <v-btn
+            icon="mdi-chevron-left"
+            variant="tonal"
+            size="small"
+            rounded="xl"
+            :disabled="finishedPage <= 0"
+            @click="finishedPage--"
+          />
+          <span class="text-body-2 text-medium-emphasis text-no-wrap">
+            {{ finishedPage + 1 }} / {{ finishedPages.length }}
+          </span>
+          <v-btn
+            icon="mdi-chevron-right"
+            variant="tonal"
+            size="small"
+            rounded="xl"
+            :disabled="finishedPage >= finishedPages.length - 1"
+            @click="finishedPage++"
+          />
+        </template>
+      </div>
+
+      <div v-if="finishedPending" class="d-flex justify-center py-8">
+        <v-progress-circular indeterminate color="primary" size="32" />
+      </div>
+
+      <LoadErrorState
+        v-else-if="finishedFailed"
+        :message="finishedErrorMessage"
+        detail="無法載入最近遊玩完畢，請稍後再試。"
+        @retry="refreshFinished()"
+      />
+
+      <v-sheet
+        v-else-if="finishedGames.length === 0"
+        rounded="xl"
+        border
+        color="surface-variant"
+        class="finished-games-state pa-6 text-center"
+      >
+        <p class="text-body-2 text-medium-emphasis mb-0">尚無遊玩完畢的遊戲。</p>
+      </v-sheet>
+
+      <v-window v-else v-model="finishedPage" class="finished-games__window" :touch="false">
+        <v-window-item
+          v-for="(page, pageIndex) in finishedPages"
+          :key="`finished-page-${pageIndex}`"
+        >
+          <div
+            class="finished-games__grid"
+            :style="{ gridTemplateColumns: `repeat(${finishedColumns}, minmax(0, 1fr))` }"
+          >
+            <v-card
+              v-for="game in page"
+              :key="`${game.userId}-${game.gameErogsId}`"
+              rounded="xl"
+              variant="outlined"
+              class="finished-games__card"
+              :to="`/game/${game.gameErogsId}`"
+            >
+              <v-img :src="finishedGameImage(game)" height="96" cover class="finished-games__image">
+                <template #placeholder>
+                  <div class="fill-height finished-games__placeholder" />
+                </template>
+              </v-img>
+              <div class="pa-2">
+                <div class="finished-games__name text-caption font-weight-bold">
+                  {{ game.gameErogs?.name }}
+                </div>
+                <v-chip
+                  size="x-small"
+                  variant="tonal"
+                  color="primary"
+                  label
+                  class="finished-games__brand mt-1"
+                >
+                  {{ game.gameErogs?.brandErogs?.name }}
+                </v-chip>
+                <div class="text-caption text-medium-emphasis mt-1">
+                  {{ game.nickName?.trim() || '未紀錄' }}
+                </div>
+                <div class="text-caption text-medium-emphasis">
+                  {{ finishedGameDate(game) }}
+                </div>
+              </div>
+            </v-card>
+          </div>
+        </v-window-item>
+      </v-window>
+    </section>
+
     <div class="d-flex flex-wrap align-center justify-space-between ga-3 mb-6">
       <div>
         <h1 class="text-h5 font-weight-bold mb-1">使用者列表</h1>
@@ -13,20 +108,12 @@
       <v-progress-circular indeterminate color="primary" size="40" />
     </div>
 
-    <v-sheet
+    <LoadErrorState
       v-else-if="usersFailed"
-      rounded="xl"
-      border
-      color="surface-variant"
-      class="users-error-state pa-8 text-center"
-    >
-      <v-icon size="48" color="error" class="mb-4">mdi-alert-circle-outline</v-icon>
-      <p class="text-body-1 font-weight-medium mb-2">{{ usersErrorMessage }}</p>
-      <p class="text-body-2 text-medium-emphasis mb-4">無法載入使用者列表，請稍後再試。</p>
-      <v-btn color="primary" variant="tonal" prepend-icon="mdi-refresh" @click="refreshUsers()">
-        重試
-      </v-btn>
-    </v-sheet>
+      :message="usersErrorMessage"
+      detail="無法載入使用者列表，請稍後再試。"
+      @retry="refreshUsers()"
+    />
 
     <v-sheet
       v-else-if="users.length === 0"
@@ -99,8 +186,70 @@
 
 <script setup lang="ts">
 import { apiErrorUserMessage, logApiError } from '~/utils/apiError';
+import { formatUserGameDate } from '~/utils/userGameDate';
 import { isUserRoleDeveloper, isUserRoleOwner, USER_ROLE, userRoleLabel } from '~/utils/userRole';
-import type { ApiResponse, FetchErrorLike, UserItem } from '~/types/user-api';
+import type { ApiResponse, FetchErrorLike, FinishedUserGame, UserItem } from '~/types/user-api';
+
+const PLACEHOLDER_IMAGE_URL = 'https://cdn.kurohelper.com/docs/neneGIF.gif';
+
+const emptyFinishedResponse = (): ApiResponse<FinishedUserGame[]> => ({
+  message: '',
+  data: [],
+});
+
+const {
+  data: finishedResponse,
+  pending: finishedPending,
+  error: finishedError,
+  status: finishedStatus,
+  refresh: refreshFinished,
+} = useFetch<ApiResponse<FinishedUserGame[]>, FetchErrorLike>(
+  '/api/statistics/user-game/finished',
+  {
+    default: emptyFinishedResponse,
+  },
+);
+
+watch(finishedError, (err) => {
+  if (err) logApiError(err);
+});
+
+const finishedFailed = computed(() => finishedStatus.value === 'error');
+const finishedErrorMessage = computed(() =>
+  finishedError.value ? apiErrorUserMessage(finishedError.value) : '請稍後再試。',
+);
+
+const finishedGames = computed(() => finishedResponse.value?.data ?? []);
+
+const finishedPage = ref(0);
+const display = useDisplay();
+const finishedColumns = computed(() => (display.lgAndUp.value ? 6 : 3));
+const finishedPages = computed(() => {
+  const size = finishedColumns.value;
+  const items = finishedGames.value;
+  const pages: FinishedUserGame[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    pages.push(items.slice(i, i + size));
+  }
+  return pages;
+});
+
+watch(finishedPages, (pages) => {
+  if (finishedPage.value > Math.max(0, pages.length - 1)) finishedPage.value = 0;
+});
+
+function finishedGameImage(game: FinishedUserGame) {
+  return game.gameErogs?.image?.trim() || PLACEHOLDER_IMAGE_URL;
+}
+
+function finishedDatePart(input?: string | null) {
+  const date = formatUserGameDate(input);
+  return !input || date === '—' ? '-' : date;
+}
+
+function finishedGameDate(game: FinishedUserGame) {
+  return `${finishedDatePart(game.startDate)}到${finishedDatePart(game.finishedDate)}`;
+}
 
 const emptyApiResponse = (): ApiResponse<UserItem[]> => ({
   message: '',
@@ -204,8 +353,52 @@ function userInitials(item: UserItem) {
   text-overflow: ellipsis;
 }
 
+.finished-games__window {
+  overflow: hidden;
+}
+
+.finished-games__grid {
+  display: grid;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.finished-games__card {
+  height: 100%;
+  overflow: hidden;
+  text-decoration: none;
+}
+
+.finished-games__image {
+  border-radius: 12px 12px 0 0;
+}
+
+.finished-games__name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.35;
+  min-height: calc(1.35em * 2);
+}
+
+.finished-games__brand {
+  max-width: 100%;
+}
+
+.finished-games__brand :deep(.v-chip__content) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.finished-games__placeholder {
+  background: rgba(var(--v-theme-on-surface), 0.06);
+}
+
 .empty-state,
-.users-error-state {
+.finished-games-state {
   border-style: dashed;
 }
 </style>

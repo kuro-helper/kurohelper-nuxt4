@@ -53,20 +53,12 @@
       <v-progress-circular indeterminate color="primary" size="40" />
     </div>
 
-    <v-sheet
+    <LoadErrorState
       v-else-if="brandsFailed"
-      rounded="xl"
-      border
-      color="surface-variant"
-      class="brands-error-state pa-8 text-center"
-    >
-      <v-icon size="48" color="error" class="mb-4">mdi-alert-circle-outline</v-icon>
-      <p class="text-body-1 font-weight-medium mb-2">{{ brandsErrorMessage }}</p>
-      <p class="text-body-2 text-medium-emphasis mb-4">無法載入品牌列表，請稍後再試。</p>
-      <v-btn color="primary" variant="tonal" prepend-icon="mdi-refresh" @click="refreshBrands()">
-        重試
-      </v-btn>
-    </v-sheet>
+      :message="brandsErrorMessage"
+      detail="無法載入品牌列表，請稍後再試。"
+      @retry="refreshBrands()"
+    />
 
     <v-sheet
       v-else-if="brands.length === 0"
@@ -256,8 +248,7 @@ function brandInitials(item: BrandErogsItem) {
   overflow: hidden;
 }
 
-.empty-state,
-.brands-error-state {
+.empty-state {
   border-style: dashed;
 }
 </style>

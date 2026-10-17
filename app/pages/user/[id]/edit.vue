@@ -2,7 +2,10 @@
   <v-container max-width="md" class="py-8 px-4">
     <v-card variant="outlined" class="rounded-xl pa-6 pa-md-8">
       <div class="d-flex align-center justify-space-between flex-wrap ga-2 mb-6">
-        <h1 class="text-h5 font-weight-bold">修改個人資料</h1>
+        <div>
+          <h1 class="text-h5 font-weight-bold mb-1">修改個人資料</h1>
+          <p class="text-body-2 text-medium-emphasis mb-0">說明／簡介支援 Markdown</p>
+        </div>
         <v-btn variant="text" class="text-none" :to="`/user/${idParam}`">返回個人頁</v-btn>
       </div>
 
@@ -24,18 +27,12 @@
         <v-progress-circular indeterminate color="primary" size="40" />
       </div>
 
-      <v-sheet
+      <LoadErrorState
         v-else-if="profileFailed"
-        rounded="xl"
-        border
-        color="surface-variant"
-        class="pa-8 text-center"
-      >
-        <p class="text-body-1 font-weight-medium mb-4">{{ profileErrorMessage }}</p>
-        <v-btn color="primary" variant="tonal" prepend-icon="mdi-refresh" @click="refreshProfile()">
-          重試
-        </v-btn>
-      </v-sheet>
+        :message="profileErrorMessage"
+        detail="無法載入使用者資料，請稍後再試。"
+        @retry="refreshProfile()"
+      />
 
       <form v-else class="d-flex flex-column ga-6" @submit.prevent="onSubmit">
         <div class="d-flex flex-column align-center ga-3">
@@ -63,11 +60,18 @@
         <v-text-field v-model="form.nickName" label="暱稱" hide-details="auto" />
         <v-textarea
           v-model="form.description"
-          label="說明／簡介"
+          label="說明／簡介（Markdown）"
           rows="4"
           auto-grow
           hide-details="auto"
         />
+
+        <div v-if="form.description.trim()" class="preview-block">
+          <div class="text-caption text-medium-emphasis mb-2">簡介預覽</div>
+          <v-sheet rounded="lg" border class="pa-4">
+            <MarkdownContent :source="form.description" />
+          </v-sheet>
+        </div>
 
         <v-sheet rounded="lg" border color="surface-variant" class="pa-4">
           <v-switch
@@ -166,7 +170,7 @@ watch(profileError, (err) => {
 
 const profileFailed = computed(() => profileStatus.value === 'error');
 const profileErrorMessage = computed(() =>
-  profileError.value ? apiErrorUserMessage(profileError.value) : '無法載入使用者資料，請稍後再試。',
+  profileError.value ? apiErrorUserMessage(profileError.value) : '請稍後再試。',
 );
 
 const form = reactive({
@@ -248,6 +252,10 @@ const onSubmit = async () => {
 </script>
 
 <style scoped>
+.preview-block {
+  min-width: 0;
+}
+
 .avatar-display {
   border: 2px solid rgba(var(--v-theme-outline), 0.5);
 }

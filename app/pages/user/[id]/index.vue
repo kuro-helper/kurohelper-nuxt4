@@ -16,20 +16,12 @@
           <v-progress-circular indeterminate color="primary" size="40" />
         </div>
 
-        <v-sheet
+        <LoadErrorState
           v-else-if="gamesFailed"
-          rounded="xl"
-          border
-          color="surface-variant"
-          class="games-error-state pa-8 text-center"
-        >
-          <v-icon size="48" color="error" class="mb-4">mdi-alert-circle-outline</v-icon>
-          <p class="text-body-1 font-weight-medium mb-2">{{ gamesErrorMessage }}</p>
-          <p class="text-body-2 text-medium-emphasis mb-4">無法載入使用者資料，請稍後再試。</p>
-          <v-btn color="primary" variant="tonal" prepend-icon="mdi-refresh" @click="refreshGames()">
-            重試
-          </v-btn>
-        </v-sheet>
+          :message="gamesErrorMessage"
+          detail="無法載入使用者資料，請稍後再試。"
+          @retry="refreshGames()"
+        />
 
         <template v-else>
           <div class="d-flex ga-4 align-center justify-space-between mb-6">
@@ -59,9 +51,12 @@
 
           <v-sheet rounded="xl" border color="surface-variant" class="pa-5 mb-6">
             <div class="text-subtitle-2 mb-2">說明／簡介</div>
-            <p class="text-body-1 text-medium-emphasis mb-0">
-              {{ user.description || '（無）' }}
-            </p>
+            <MarkdownContent
+              v-if="user.description"
+              :source="user.description"
+              class="text-medium-emphasis"
+            />
+            <p v-else class="text-body-1 text-medium-emphasis mb-0">（無）</p>
           </v-sheet>
 
           <UserGameBrandChart v-if="!showPrivateGamesLock" :games="userGames" class="mb-6" />
@@ -1764,8 +1759,7 @@ function formatLocalDate(input?: string | null) {
   word-break: break-word;
 }
 
-.empty-state,
-.games-error-state {
+.empty-state {
   border-style: dashed;
 }
 
