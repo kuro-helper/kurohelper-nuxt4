@@ -62,7 +62,7 @@
               rounded="xl"
               variant="outlined"
               class="finished-games__card"
-              :to="`/game/${game.gameErogsId}`"
+              v-bind="finishedGameLink(game)"
             >
               <v-img :src="finishedGameImage(game)" height="96" cover class="finished-games__image">
                 <template #placeholder>
@@ -98,9 +98,23 @@
     <div class="d-flex flex-wrap align-center justify-space-between ga-3 mb-6">
       <div>
         <h1 class="text-h5 font-weight-bold mb-1">使用者列表</h1>
-        <p v-if="!usersPending && !usersFailed" class="text-body-2 text-medium-emphasis mb-0">
-          共 {{ users.length }} 位使用者
-        </p>
+        <div v-if="!usersPending && !usersFailed" class="d-flex flex-wrap align-center ga-3">
+          <p class="text-body-2 text-medium-emphasis mb-0">
+            共 {{ filteredUsers.length }} 位使用者
+          </p>
+          <v-select
+            v-model="roleFilter"
+            :items="roleFilterItems"
+            item-title="title"
+            item-value="value"
+            density="compact"
+            variant="outlined"
+            hide-details
+            rounded="lg"
+            class="user-role-filter"
+            aria-label="依使用者類別篩選"
+          />
+        </div>
       </div>
     </div>
 
@@ -125,6 +139,16 @@
       <p class="text-body-2 text-medium-emphasis mb-0">尚無使用者資料。</p>
     </v-sheet>
 
+    <v-sheet
+      v-else-if="filteredUsers.length === 0"
+      rounded="xl"
+      border
+      color="surface-variant"
+      class="empty-state pa-8 text-center"
+    >
+      <p class="text-body-2 text-medium-emphasis mb-0">此類別尚無使用者。</p>
+    </v-sheet>
+
     <div v-else>
       <section
         v-for="section in userSections"
@@ -147,34 +171,21 @@
               class="user-card h-100"
               :to="`/user/${item.id}`"
             >
-              <v-card-text class="pa-4 d-flex flex-column align-center text-center">
-                <v-avatar size="72" rounded="lg" class="user-card__avatar mb-3">
+              <v-card-text class="pa-3 d-flex align-center ga-3">
+                <v-avatar size="56" rounded="lg" class="user-card__avatar">
                   <v-img v-if="item.avatar" :src="item.avatar" :alt="item.nickName" cover />
-                  <span v-else class="text-h5 font-weight-bold">{{ userInitials(item) }}</span>
+                  <span v-else class="text-h6 font-weight-bold">{{ userInitials(item) }}</span>
                 </v-avatar>
 
-                <div
-                  class="user-card__name text-subtitle-1 font-weight-bold mb-2"
-                  :title="item.nickName"
-                >
-                  {{ item.nickName || '—' }}
+                <div class="user-card__meta min-w-0">
+                  <div
+                    class="user-card__name text-subtitle-1 font-weight-bold"
+                    :title="item.nickName"
+                  >
+                    {{ item.nickName || '—' }}
+                  </div>
+                  <UserRoleChip :role="item.role" size="x-small" class="mt-1" />
                 </div>
-
-                <!-- <v-chip
-                  v-if="item.discordId"
-                  size="small"
-                  color="primary"
-                  variant="tonal"
-                  label
-                  class="mb-2"
-                >
-                  {{ item.discordId }}
-                </v-chip>
-                <v-chip v-else size="small" color="error" variant="tonal" label class="mb-2">
-                  尚未綁定 Discord
-                </v-chip> -->
-
-                <UserRoleChip :role="item.role" size="x-small" />
               </v-card-text>
             </v-card>
           </v-col>
@@ -190,7 +201,11 @@ import { formatUserGameDate } from '~/utils/userGameDate';
 import { isUserRoleDeveloper, isUserRoleOwner, USER_ROLE, userRoleLabel } from '~/utils/userRole';
 import type { ApiResponse, FetchErrorLike, FinishedUserGame, UserItem } from '~/types/user-api';
 
+const { isLoggedIn } = useAuth();
+
 const PLACEHOLDER_IMAGE_URL = 'https://cdn.kurohelper.com/docs/neneGIF.gif';
+const EROGAMESCAPE_GAME_URL =
+  'https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/game.php?game=';
 
 const emptyFinishedResponse = (): ApiResponse<FinishedUserGame[]> => ({
   message: '',
@@ -242,6 +257,15 @@ function finishedGameImage(game: FinishedUserGame) {
   return game.gameErogs?.image?.trim() || PLACEHOLDER_IMAGE_URL;
 }
 
+function finishedGameLink(game: FinishedUserGame) {
+  if (isLoggedIn.value) return { to: `/game/${game.gameErogsId}` };
+  return {
+    href: `${EROGAMESCAPE_GAME_URL}${game.gameErogsId}`,
+    target: '_blank',
+    rel: 'noopener noreferrer',
+  };
+}
+
 function finishedDatePart(input?: string | null) {
   const date = formatUserGameDate(input);
   return !input || date === '—' ? '-' : date;
@@ -277,12 +301,33 @@ const usersErrorMessage = computed(() =>
 
 const users = computed(() => [...(usersResponse.value?.data ?? [])].sort((a, b) => a.id - b.id));
 
+type RoleFilter = 'all' | 'owner' | 'developer' | 'user';
+
+const roleFilter = ref<RoleFilter>('all');
+
+const roleFilterItems: { title: string; value: RoleFilter }[] = [
+  { title: '全部', value: 'all' },
+  { title: userRoleLabel(USER_ROLE.OWNER), value: 'owner' },
+  { title: userRoleLabel(USER_ROLE.DEVELOPER), value: 'developer' },
+  { title: userRoleLabel(USER_ROLE.USER), value: 'user' },
+];
+
+const filteredUsers = computed(() => {
+  const filter = roleFilter.value;
+  if (filter === 'owner') return users.value.filter((u) => isUserRoleOwner(u.role));
+  if (filter === 'developer') return users.value.filter((u) => isUserRoleDeveloper(u.role));
+  if (filter === 'user') {
+    return users.value.filter((u) => !isUserRoleOwner(u.role) && !isUserRoleDeveloper(u.role));
+  }
+  return users.value;
+});
+
 const sortById = (a: UserItem, b: UserItem) => a.id - b.id;
 
 const userSections = computed(() => {
-  const owners = users.value.filter((u) => isUserRoleOwner(u.role)).sort(sortById);
-  const developers = users.value.filter((u) => isUserRoleDeveloper(u.role)).sort(sortById);
-  const regular = users.value
+  const owners = filteredUsers.value.filter((u) => isUserRoleOwner(u.role)).sort(sortById);
+  const developers = filteredUsers.value.filter((u) => isUserRoleDeveloper(u.role)).sort(sortById);
+  const regular = filteredUsers.value
     .filter((u) => !isUserRoleOwner(u.role) && !isUserRoleDeveloper(u.role))
     .sort(sortById);
 
@@ -300,6 +345,19 @@ function userInitials(item: UserItem) {
 </script>
 
 <style scoped>
+.user-role-filter {
+  width: 148px;
+  max-width: 100%;
+  flex: 0 0 auto;
+}
+
+.user-role-filter :deep(.v-field__input) {
+  font-size: 0.875rem;
+  min-height: 36px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
 .user-section {
   margin-bottom: 2rem;
 }
@@ -342,8 +400,15 @@ function userInitials(item: UserItem) {
 }
 
 .user-card__avatar {
+  flex-shrink: 0;
   border: 1px solid rgba(var(--v-theme-outline), 0.45);
   background: rgba(var(--v-theme-surface-variant), 0.6);
+}
+
+.user-card__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .user-card__name {
