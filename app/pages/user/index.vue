@@ -147,34 +147,21 @@
               class="user-card h-100"
               :to="`/user/${item.id}`"
             >
-              <v-card-text class="pa-4 d-flex flex-column align-center text-center">
-                <v-avatar size="72" rounded="lg" class="user-card__avatar mb-3">
+              <v-card-text class="pa-3 d-flex align-center ga-3">
+                <v-avatar size="56" rounded="lg" class="user-card__avatar">
                   <v-img v-if="item.avatar" :src="item.avatar" :alt="item.nickName" cover />
-                  <span v-else class="text-h5 font-weight-bold">{{ userInitials(item) }}</span>
+                  <span v-else class="text-h6 font-weight-bold">{{ userInitials(item) }}</span>
                 </v-avatar>
 
-                <div
-                  class="user-card__name text-subtitle-1 font-weight-bold mb-2"
-                  :title="item.nickName"
-                >
-                  {{ item.nickName || '—' }}
+                <div class="user-card__meta min-w-0">
+                  <div
+                    class="user-card__name text-subtitle-1 font-weight-bold"
+                    :title="item.nickName"
+                  >
+                    {{ item.nickName || '—' }}
+                  </div>
+                  <UserRoleChip :role="item.role" size="x-small" class="mt-1" />
                 </div>
-
-                <!-- <v-chip
-                  v-if="item.discordId"
-                  size="small"
-                  color="primary"
-                  variant="tonal"
-                  label
-                  class="mb-2"
-                >
-                  {{ item.discordId }}
-                </v-chip>
-                <v-chip v-else size="small" color="error" variant="tonal" label class="mb-2">
-                  尚未綁定 Discord
-                </v-chip> -->
-
-                <UserRoleChip :role="item.role" size="x-small" />
               </v-card-text>
             </v-card>
           </v-col>
@@ -342,8 +329,15 @@ function userInitials(item: UserItem) {
 }
 
 .user-card__avatar {
+  flex-shrink: 0;
   border: 1px solid rgba(var(--v-theme-outline), 0.45);
   background: rgba(var(--v-theme-surface-variant), 0.6);
+}
+
+.user-card__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .user-card__name {
