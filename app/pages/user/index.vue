@@ -62,7 +62,7 @@
               rounded="xl"
               variant="outlined"
               class="finished-games__card"
-              :to="`/game/${game.gameErogsId}`"
+              v-bind="finishedGameLink(game)"
             >
               <v-img :src="finishedGameImage(game)" height="96" cover class="finished-games__image">
                 <template #placeholder>
@@ -201,7 +201,11 @@ import { formatUserGameDate } from '~/utils/userGameDate';
 import { isUserRoleDeveloper, isUserRoleOwner, USER_ROLE, userRoleLabel } from '~/utils/userRole';
 import type { ApiResponse, FetchErrorLike, FinishedUserGame, UserItem } from '~/types/user-api';
 
+const { isLoggedIn } = useAuth();
+
 const PLACEHOLDER_IMAGE_URL = 'https://cdn.kurohelper.com/docs/neneGIF.gif';
+const EROGAMESCAPE_GAME_URL =
+  'https://erogamescape.dyndns.org/~ap2/ero/toukei_kaiseki/game.php?game=';
 
 const emptyFinishedResponse = (): ApiResponse<FinishedUserGame[]> => ({
   message: '',
@@ -251,6 +255,15 @@ watch(finishedPages, (pages) => {
 
 function finishedGameImage(game: FinishedUserGame) {
   return game.gameErogs?.image?.trim() || PLACEHOLDER_IMAGE_URL;
+}
+
+function finishedGameLink(game: FinishedUserGame) {
+  if (isLoggedIn.value) return { to: `/game/${game.gameErogsId}` };
+  return {
+    href: `${EROGAMESCAPE_GAME_URL}${game.gameErogsId}`,
+    target: '_blank',
+    rel: 'noopener noreferrer',
+  };
 }
 
 function finishedDatePart(input?: string | null) {
