@@ -98,9 +98,23 @@
     <div class="d-flex flex-wrap align-center justify-space-between ga-3 mb-6">
       <div>
         <h1 class="text-h5 font-weight-bold mb-1">使用者列表</h1>
-        <p v-if="!usersPending && !usersFailed" class="text-body-2 text-medium-emphasis mb-0">
-          共 {{ users.length }} 位使用者
-        </p>
+        <div v-if="!usersPending && !usersFailed" class="d-flex flex-wrap align-center ga-3">
+          <p class="text-body-2 text-medium-emphasis mb-0">
+            共 {{ filteredUsers.length }} 位使用者
+          </p>
+          <v-select
+            v-model="roleFilter"
+            :items="roleFilterItems"
+            item-title="title"
+            item-value="value"
+            density="compact"
+            variant="outlined"
+            hide-details
+            rounded="lg"
+            class="user-role-filter"
+            aria-label="依使用者類別篩選"
+          />
+        </div>
       </div>
     </div>
 
@@ -123,6 +137,16 @@
       class="empty-state pa-8 text-center"
     >
       <p class="text-body-2 text-medium-emphasis mb-0">尚無使用者資料。</p>
+    </v-sheet>
+
+    <v-sheet
+      v-else-if="filteredUsers.length === 0"
+      rounded="xl"
+      border
+      color="surface-variant"
+      class="empty-state pa-8 text-center"
+    >
+      <p class="text-body-2 text-medium-emphasis mb-0">此類別尚無使用者。</p>
     </v-sheet>
 
     <div v-else>
@@ -264,12 +288,33 @@ const usersErrorMessage = computed(() =>
 
 const users = computed(() => [...(usersResponse.value?.data ?? [])].sort((a, b) => a.id - b.id));
 
+type RoleFilter = 'all' | 'owner' | 'developer' | 'user';
+
+const roleFilter = ref<RoleFilter>('all');
+
+const roleFilterItems: { title: string; value: RoleFilter }[] = [
+  { title: '全部', value: 'all' },
+  { title: userRoleLabel(USER_ROLE.OWNER), value: 'owner' },
+  { title: userRoleLabel(USER_ROLE.DEVELOPER), value: 'developer' },
+  { title: userRoleLabel(USER_ROLE.USER), value: 'user' },
+];
+
+const filteredUsers = computed(() => {
+  const filter = roleFilter.value;
+  if (filter === 'owner') return users.value.filter((u) => isUserRoleOwner(u.role));
+  if (filter === 'developer') return users.value.filter((u) => isUserRoleDeveloper(u.role));
+  if (filter === 'user') {
+    return users.value.filter((u) => !isUserRoleOwner(u.role) && !isUserRoleDeveloper(u.role));
+  }
+  return users.value;
+});
+
 const sortById = (a: UserItem, b: UserItem) => a.id - b.id;
 
 const userSections = computed(() => {
-  const owners = users.value.filter((u) => isUserRoleOwner(u.role)).sort(sortById);
-  const developers = users.value.filter((u) => isUserRoleDeveloper(u.role)).sort(sortById);
-  const regular = users.value
+  const owners = filteredUsers.value.filter((u) => isUserRoleOwner(u.role)).sort(sortById);
+  const developers = filteredUsers.value.filter((u) => isUserRoleDeveloper(u.role)).sort(sortById);
+  const regular = filteredUsers.value
     .filter((u) => !isUserRoleOwner(u.role) && !isUserRoleDeveloper(u.role))
     .sort(sortById);
 
@@ -287,6 +332,19 @@ function userInitials(item: UserItem) {
 </script>
 
 <style scoped>
+.user-role-filter {
+  width: 148px;
+  max-width: 100%;
+  flex: 0 0 auto;
+}
+
+.user-role-filter :deep(.v-field__input) {
+  font-size: 0.875rem;
+  min-height: 36px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
 .user-section {
   margin-bottom: 2rem;
 }
