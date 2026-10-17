@@ -34,6 +34,15 @@ export type UserGameErogsDto = {
   brandErogs?: UserGameBrandErogsDto;
 };
 
+export type FinishedUserGame = {
+  userId: number;
+  nickName?: string;
+  gameErogsId: number;
+  startDate?: string | null;
+  finishedDate?: string | null;
+  gameErogs?: UserGameErogsDto;
+};
+
 export type UserGameDto = {
   userId: number;
   gameErogsId: number;
