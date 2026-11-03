@@ -13,7 +13,7 @@ const MAX_QUERY_LENGTH = 50;
 
 let loaded = false;
 let games: ErogsGameItem[] = [];
-const invertedIndex = new Map<string, number[]>();
+let invertedIndex = new Map<string, number[]>();
 
 function distinctGames(entries: ErogsGameItem[]): ErogsGameItem[] {
   const seen = new Set<number>();
@@ -34,7 +34,7 @@ function distinctGames(entries: ErogsGameItem[]): ErogsGameItem[] {
 }
 
 function buildInvertedIndex(items: ErogsGameItem[]) {
-  invertedIndex.clear();
+  const index = new Map<string, number[]>();
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
@@ -46,11 +46,12 @@ function buildInvertedIndex(items: ErogsGameItem[]) {
     for (const char of name) {
       if (seen.has(char)) continue;
       seen.add(char);
-      const bucket = invertedIndex.get(char);
+      const bucket = index.get(char);
       if (bucket) bucket.push(i);
-      else invertedIndex.set(char, [i]);
+      else index.set(char, [i]);
     }
   }
+  return index;
 }
 
 export function isErogsGameAutocompleteReady() {
@@ -58,14 +59,14 @@ export function isErogsGameAutocompleteReady() {
 }
 
 export async function loadErogsGameAutocomplete(filePath: string) {
-  if (loaded) return;
-
   const absPath = resolve(process.cwd(), filePath);
   const raw = await readFile(absPath, 'utf-8');
   const entries = JSON.parse(raw) as ErogsGameItem[];
 
-  games = distinctGames(entries);
-  buildInvertedIndex(games);
+  const nextGames = distinctGames(entries);
+  const nextIndex = buildInvertedIndex(nextGames);
+  games = nextGames;
+  invertedIndex = nextIndex;
   loaded = true;
 }
 
