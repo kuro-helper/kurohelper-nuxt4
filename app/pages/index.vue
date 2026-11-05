@@ -15,12 +15,18 @@
       </div>
 
       <div class="d-flex flex-wrap justify-center ga-3">
-        <v-btn color="primary" size="large" class="text-none" disabled>開始查詢</v-btn>
+        <v-btn color="primary" size="large" class="text-none" :disabled="!isLoggedIn" to="/search">
+          開始查詢
+        </v-btn>
         <v-btn variant="outlined" size="large" class="text-none" to="/user">使用者列表</v-btn>
       </div>
     </div>
   </v-container>
 </template>
+
+<script setup lang="ts">
+const { isLoggedIn } = useAuth();
+</script>
 
 <style scoped>
 .home-hero__logo-wrap {
