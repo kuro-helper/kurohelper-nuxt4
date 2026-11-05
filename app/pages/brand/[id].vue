@@ -60,12 +60,14 @@
           <h2 class="text-h6 font-weight-bold mb-1">遊戲列表</h2>
           <p v-if="!gamesPending && !gamesFailed" class="text-body-2 text-medium-emphasis mb-0">
             共 {{ filteredGames.length }} 款遊戲
-            <template v-if="nameKeyword.trim()">（全部 {{ games.length }}）</template>
+            <template v-if="nameKeyword.trim() || selectedPlatform !== null">
+              （全部 {{ games.length }}）
+            </template>
           </p>
           <p class="text-caption text-medium-emphasis mb-0 mt-1">資料來源：批評空間</p>
         </div>
 
-        <div class="brand-toolbar__right d-flex align-center ga-2 flex-nowrap">
+        <div class="brand-toolbar__right d-flex align-center ga-2 flex-wrap">
           <v-text-field
             v-model="nameKeyword"
             class="brand-name-filter"
@@ -77,6 +79,7 @@
             placeholder="篩選遊戲名稱"
             prepend-inner-icon="mdi-magnify"
           />
+          <GamePlatformFilter v-model="selectedPlatform" :games="games" />
           <div
             v-if="!gamesPending && !gamesFailed && gamePages.length > 0"
             class="d-flex align-center ga-2 flex-none"
@@ -132,9 +135,7 @@
         color="surface-variant"
         class="brand-detail-state pa-8 text-center"
       >
-        <p class="text-body-2 text-medium-emphasis mb-0">
-          找不到符合「{{ nameKeyword.trim() }}」的遊戲。
-        </p>
+        <p class="text-body-2 text-medium-emphasis mb-0">找不到符合篩選條件的遊戲。</p>
       </v-sheet>
 
       <v-window v-else v-model="gamePage" class="carousel-window" :touch="false">
@@ -171,15 +172,7 @@
                     ID {{ item.id }}
                   </v-chip>
 
-                  <v-chip
-                    v-if="item.category"
-                    size="x-small"
-                    :color="erogsGameCategoryChipColor(item.category)"
-                    variant="tonal"
-                    label
-                  >
-                    {{ item.category }}
-                  </v-chip>
+                  <GamePlatformChip :category="item.category" />
                 </v-card-text>
               </v-card>
             </v-col>
@@ -191,7 +184,6 @@
 </template>
 
 <script setup lang="ts">
-import { erogsGameCategoryChipColor } from '~/utils/erogsGameCategory';
 import { apiErrorUserMessage, logApiError } from '~/utils/apiError';
 import type { BrandErogsItem, GameErogsItem } from '~/types/erogs-api';
 import type { ApiResponse, FetchErrorLike } from '~/types/user-api';
@@ -279,12 +271,17 @@ const brand = computed(() => {
 const games = computed(() => [...(gamesResponse.value?.data ?? [])].sort((a, b) => b.id - a.id));
 
 const nameKeyword = ref('');
+const selectedPlatform = ref<string | null>(null);
 const gamePage = ref(0);
 
 const filteredGames = computed(() => {
   const keyword = nameKeyword.value.trim().toLocaleLowerCase();
-  if (!keyword) return games.value;
-  return games.value.filter((item) => item.name?.toLocaleLowerCase().includes(keyword));
+  return games.value.filter((item) => {
+    const matchesName = !keyword || item.name?.toLocaleLowerCase().includes(keyword);
+    const matchesPlatform =
+      selectedPlatform.value === null || (item.category?.trim() || '') === selectedPlatform.value;
+    return matchesName && matchesPlatform;
+  });
 });
 
 const chunk = <T,>(items: T[], size: number) => {
@@ -298,7 +295,7 @@ const chunk = <T,>(items: T[], size: number) => {
 
 const gamePages = computed(() => chunk(filteredGames.value, PAGE_SIZE));
 
-watch(nameKeyword, () => {
+watch([nameKeyword, selectedPlatform], () => {
   gamePage.value = 0;
 });
 
@@ -308,6 +305,7 @@ watch(gamePages, (pages) => {
 
 watch(brandId, () => {
   nameKeyword.value = '';
+  selectedPlatform.value = null;
   gamePage.value = 0;
 });
 
