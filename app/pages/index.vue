@@ -15,9 +15,10 @@
       </div>
 
       <div class="d-flex flex-wrap justify-center ga-3">
-        <v-btn color="primary" size="large" class="text-none" :disabled="!isLoggedIn" to="/search">
+        <v-btn v-if="isLoggedIn" color="primary" size="large" class="text-none" to="/search">
           開始查詢
         </v-btn>
+        <v-btn v-else color="primary" size="large" class="text-none" disabled>開始查詢</v-btn>
         <v-btn variant="outlined" size="large" class="text-none" to="/user">使用者列表</v-btn>
       </div>
     </div>

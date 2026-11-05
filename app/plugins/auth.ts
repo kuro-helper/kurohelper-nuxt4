@@ -1,8 +1,10 @@
-export default defineNuxtPlugin(async () => {
+export default defineNuxtPlugin(async (nuxtApp) => {
   const { refresh, user } = useAuth();
-  await refresh();
-  // SameSite=Strict：外站連結進來時 SSR 可能沒帶 cookie，client 再補查一次
-  if (import.meta.client && !user.value) {
-    await refresh();
+
+  if (import.meta.client) {
+    // 在 hydration 完成後確認登入狀態，避免快取頁面包含使用者資料。
+    nuxtApp.hook('app:mounted', async () => {
+      if (!user.value) await refresh();
+    });
   }
 });
