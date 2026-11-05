@@ -3,6 +3,13 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
+  routeRules: {
+    '/game': { ssr: false },
+    '/game/**': { ssr: false },
+    '/search': { ssr: false },
+    '/brand': { ssr: false },
+    '/brand/**': { ssr: false },
+  },
   css: [
     '@fontsource/geist-sans/400.css',
     '@fontsource/geist-sans/600.css',
