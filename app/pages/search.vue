@@ -7,6 +7,16 @@
       </div>
       <h1 class="search-heading__title">查詢遊戲</h1>
       <p class="search-heading__description">輸入關鍵字，探索遊戲資料。</p>
+      <v-chip
+        class="mt-3"
+        size="small"
+        color="orange"
+        variant="tonal"
+        prepend-icon="mdi-database-outline"
+        label
+      >
+        資料來源：批評空間
+      </v-chip>
     </header>
 
     <v-card rounded="xl" border class="search-card">

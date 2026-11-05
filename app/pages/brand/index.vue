@@ -7,7 +7,16 @@
           共 {{ filteredBrands.length }} 個品牌
           <template v-if="nameKeyword.trim()">（全部 {{ brands.length }}）</template>
         </p>
-        <p class="text-caption text-medium-emphasis mb-0 mt-1">資料來源：批評空間</p>
+        <v-chip
+          class="mt-3"
+          size="small"
+          color="orange"
+          variant="tonal"
+          prepend-icon="mdi-database-outline"
+          label
+        >
+          資料來源：批評空間
+        </v-chip>
       </div>
 
       <div class="brand-toolbar__right d-flex align-center ga-2 flex-nowrap">
