@@ -1,0 +1,40 @@
+.v-theme--light .v-card--variant-outlined,
+.v-application.v-theme--light .v-card--variant-outlined,
+.v-theme--light .v-sheet--border,
+.v-application.v-theme--light .v-sheet--border {
+  border-color: rgba(var(--v-theme-outline), 0.85);
+}
+
+.v-theme--dark .v-card--variant-outlined,
+.v-application.v-theme--dark .v-card--variant-outlined,
+.v-theme--dark .v-sheet--border,
+.v-application.v-theme--dark .v-sheet--border {
+  border-color: rgba(var(--v-theme-outline), 0.5);
+}
+
+.v-theme--light .v-application,
+.v-application.v-theme--light {
+  background-color: rgb(var(--v-theme-background));
+  background-image:
+    radial-gradient(circle at 18% 0%, rgba(29, 78, 216, 0.16), transparent 38%),
+    radial-gradient(circle at 84% 8%, rgba(2, 132, 199, 0.14), transparent 36%),
+    radial-gradient(circle at 50% 100%, rgba(37, 99, 235, 0.08), transparent 42%),
+    linear-gradient(165deg, #dce4f2 0%, #e8eef8 48%, #eef2f8 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+.v-theme--dark .v-application,
+.v-application.v-theme--dark {
+  background-color: rgb(var(--v-theme-background));
+  background-image:
+    radial-gradient(circle at 20% 0%, rgba(var(--v-theme-primary), 0.1), transparent 38%),
+    radial-gradient(circle at 82% 10%, rgba(var(--v-theme-secondary), 0.08), transparent 36%),
+    linear-gradient(
+      165deg,
+      rgb(var(--v-theme-background-start)) 0%,
+      rgb(var(--v-theme-background-end)) 100%
+    );
+  background-attachment: fixed;
+  min-height: 100vh;
+}
