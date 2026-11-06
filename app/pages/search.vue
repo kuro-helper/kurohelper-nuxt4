@@ -5,8 +5,8 @@
         <span class="search-heading__dot" />
         KUROHELPER DATABASE
       </div>
-      <h1 class="search-heading__title">查詢遊戲</h1>
-      <p class="search-heading__description">輸入關鍵字，探索遊戲資料。</p>
+      <h1 class="search-heading__title">查詢{{ searchLabel }}</h1>
+      <p class="search-heading__description">輸入關鍵字，探索{{ searchLabel }}資料。</p>
       <v-chip
         class="mt-3"
         size="small"
@@ -21,51 +21,98 @@
 
     <v-card rounded="xl" border class="search-card">
       <v-card-text class="pa-5 pa-md-7">
-        <div class="search-card__heading mb-4">
-          <div class="search-card__icon">
-            <v-icon icon="mdi-magnify" size="22" />
-          </div>
-          <div>
-            <h2 class="text-subtitle-1 font-weight-bold">遊戲查詢</h2>
-            <p class="text-body-2 text-medium-emphasis mb-0">選擇建議項目，或直接輸入關鍵字</p>
-          </div>
-        </div>
-        <div class="search-form">
-          <v-combobox
-            v-model:search="query"
-            v-model="selectedGame"
-            :items="autocompleteItems"
-            :loading="autocompleteLoading"
-            item-title="name"
-            item-value="id"
-            return-object
-            label="遊戲名稱"
-            placeholder="輸入遊戲名稱，例如：Summer Pockets"
-            prepend-inner-icon="mdi-magnify"
-            variant="outlined"
-            density="comfortable"
-            clearable
-            hide-details="auto"
-            no-filter
-            class="search-form__input"
-            @update:model-value="selectGame"
-            @keydown.enter.prevent="searchGames"
+        <v-btn-toggle
+          v-model="searchMode"
+          mandatory
+          density="compact"
+          variant="flat"
+          class="sliding-toggle sliding-toggle--icons mb-5"
+          :class="{ 'sliding-toggle--second': searchMode === 'brand' }"
+          aria-label="查詢類型"
+        >
+          <v-btn value="game" size="small"
+            ><v-icon start>mdi-gamepad-variant-outline</v-icon>遊戲</v-btn
           >
-            <template #item="{ props, item }">
-              <v-list-item v-bind="props" :title="item.name" :subtitle="item.category || '未分類'">
-                <template #prepend>
-                  <v-avatar rounded="lg" color="primary" variant="tonal">
-                    <span class="text-caption font-weight-bold">{{ item.name.slice(0, 1) }}</span>
-                  </v-avatar>
-                </template>
-              </v-list-item>
-            </template>
-            <template #no-data>
-              <v-list-item title="沒有符合的遊戲資料">
-                <v-list-item-subtitle>你仍可直接輸入關鍵字並按下搜尋</v-list-item-subtitle>
-              </v-list-item>
-            </template>
-          </v-combobox>
+          <v-btn value="brand" size="small"><v-icon start>mdi-domain</v-icon>品牌</v-btn>
+        </v-btn-toggle>
+        <Transition name="search-mode" mode="out-in">
+          <div :key="searchMode" class="search-card__heading mb-4">
+            <div class="search-card__icon">
+              <v-icon
+                :icon="searchMode === 'game' ? 'mdi-gamepad-variant-outline' : 'mdi-domain'"
+                size="22"
+              />
+            </div>
+            <div>
+              <h2 class="text-subtitle-1 font-weight-bold">{{ searchLabel }}查詢</h2>
+              <p class="text-body-2 text-medium-emphasis mb-0">
+                {{
+                  searchMode === 'game'
+                    ? '選擇建議項目，或直接輸入關鍵字'
+                    : '輸入品牌名稱或部分關鍵字'
+                }}
+              </p>
+            </div>
+          </div>
+        </Transition>
+        <div class="search-form">
+          <Transition name="search-mode" mode="out-in">
+            <v-combobox
+              v-if="searchMode === 'game'"
+              key="game"
+              v-model:search="query"
+              v-model="selectedGame"
+              :items="autocompleteItems"
+              :loading="autocompleteLoading"
+              item-title="name"
+              item-value="id"
+              return-object
+              label="遊戲名稱"
+              placeholder="輸入遊戲名稱，例如：Summer Pockets"
+              prepend-inner-icon="mdi-magnify"
+              variant="outlined"
+              density="comfortable"
+              clearable
+              hide-details="auto"
+              no-filter
+              class="search-form__input"
+              @update:model-value="selectGame"
+              @keydown.enter.prevent="submitSearch"
+            >
+              <template #item="{ props, item }">
+                <v-list-item
+                  v-bind="props"
+                  :title="item.name"
+                  :subtitle="item.category || '未分類'"
+                >
+                  <template #prepend>
+                    <v-avatar rounded="lg" color="primary" variant="tonal">
+                      <span class="text-caption font-weight-bold">{{ item.name.slice(0, 1) }}</span>
+                    </v-avatar>
+                  </template>
+                </v-list-item>
+              </template>
+              <template #no-data>
+                <v-list-item title="沒有符合的遊戲資料">
+                  <v-list-item-subtitle>你仍可直接輸入關鍵字並按下搜尋</v-list-item-subtitle>
+                </v-list-item>
+              </template>
+            </v-combobox>
+            <v-text-field
+              v-else
+              key="brand"
+              v-model="query"
+              label="品牌名稱"
+              placeholder="輸入品牌名稱，例如：Key"
+              prepend-inner-icon="mdi-magnify"
+              variant="outlined"
+              density="comfortable"
+              clearable
+              hide-details="auto"
+              class="search-form__input"
+              @keydown.enter.prevent="submitSearch"
+            />
+          </Transition>
           <v-btn
             color="primary"
             size="large"
@@ -73,7 +120,7 @@
             class="search-form__button"
             :disabled="!query?.trim()"
             :loading="searchLoading"
-            @click="searchGames"
+            @click="submitSearch"
           >
             搜尋
           </v-btn>
@@ -99,8 +146,12 @@
           </div>
         </div>
         <div v-if="!searchLoading && !searchError" class="d-flex flex-wrap align-center ga-3">
-          <span class="results-count"> {{ filteredResults.length }} 筆結果 </span>
-          <GamePlatformFilter v-model="selectedPlatform" :games="submittedResults" />
+          <span class="results-count"> {{ resultCount }} 筆結果 </span>
+          <GamePlatformFilter
+            v-if="submittedMode === 'game'"
+            v-model="selectedPlatform"
+            :games="submittedResults"
+          />
         </div>
       </div>
 
@@ -109,17 +160,50 @@
       </div>
       <LoadErrorState
         v-else-if="searchError"
-        message="無法搜尋遊戲"
+        :message="`無法搜尋${submittedLabel}`"
         detail="請稍後再試。"
-        @retry="runSearch(submittedQuery)"
+        @retry="runSearch(submittedQuery, submittedMode)"
       />
-      <v-alert v-else-if="submittedResults.length === 0" type="info" variant="tonal" rounded="lg">
-        找不到「{{ submittedQuery }}」相關的遊戲。
+      <v-alert v-else-if="!hasResults" type="info" variant="tonal" rounded="lg">
+        找不到「{{ submittedQuery }}」相關的{{ submittedLabel }}。
       </v-alert>
-      <v-alert v-else-if="filteredResults.length === 0" type="info" variant="tonal" rounded="lg">
+      <v-alert v-else-if="resultCount === 0" type="info" variant="tonal" rounded="lg">
         找不到符合篩選條件的遊戲。
       </v-alert>
 
+      <v-row v-else-if="submittedMode === 'brand'" density="comfortable">
+        <v-col v-for="brand in submittedBrands" :key="brand.id" cols="12">
+          <v-card
+            rounded="xl"
+            variant="outlined"
+            class="game-card h-100 d-flex align-center pa-4 ga-4"
+            :to="`/brand/${brand.id}`"
+          >
+            <v-avatar size="64" rounded="lg" color="primary" variant="tonal" class="flex-shrink-0">
+              <v-icon icon="mdi-domain" size="32" />
+            </v-avatar>
+            <v-card-text class="pa-0 min-w-0">
+              <div class="game-card__eyebrow mb-1">BRAND INFORMATION</div>
+              <div
+                class="game-card__name text-subtitle-1 font-weight-bold mb-2"
+                :title="brand.name"
+              >
+                {{ brand.name || '—' }}
+              </div>
+              <div class="d-flex flex-wrap ga-2">
+                <v-chip size="small" variant="tonal" label>ID {{ brand.id }}</v-chip>
+                <v-chip size="small" color="primary" variant="tonal" label>
+                  {{ brand.gameCount }} 款遊戲
+                </v-chip>
+                <v-chip v-if="brand.disband" size="small" color="warning" variant="tonal" label>
+                  已解散
+                </v-chip>
+              </div>
+            </v-card-text>
+            <v-icon class="game-card__arrow flex-shrink-0" icon="mdi-arrow-right" size="20" />
+          </v-card>
+        </v-col>
+      </v-row>
       <v-row v-else density="comfortable">
         <v-col v-for="game in filteredResults" :key="game.id" cols="12">
           <v-card
@@ -156,13 +240,13 @@
     </section>
     <div v-else class="search-empty mt-8">
       <v-icon icon="mdi-text-search" size="20" />
-      <span>輸入名稱，開始搜尋遊戲</span>
+      <span>輸入名稱，開始搜尋{{ searchLabel }}</span>
     </div>
   </v-container>
 </template>
 
 <script setup lang="ts">
-import type { GameErogsItem } from '~/types/erogs-api';
+import type { BrandErogsItem, GameErogsItem } from '~/types/erogs-api';
 import type { ErogsGameAutocompleteItem } from '~/types/game-erogs-api';
 import type { ApiResponse } from '~/types/user-api';
 import { logApiError } from '~/utils/apiError';
@@ -172,10 +256,15 @@ definePageMeta({ middleware: 'auth' });
 const PLACEHOLDER_IMAGE_URL = 'https://cdn.kurohelper.com/docs/neneGIF.gif';
 
 const query = ref<string | undefined>('');
+const searchMode = ref<'game' | 'brand'>('game');
+const searchLabel = computed(() => (searchMode.value === 'game' ? '遊戲' : '品牌'));
 const selectedGame = ref<ErogsGameAutocompleteItem | string | null>(null);
 const hasSearched = ref(false);
 const submittedQuery = ref('');
+const submittedMode = ref<'game' | 'brand'>('game');
+const submittedLabel = computed(() => (submittedMode.value === 'game' ? '遊戲' : '品牌'));
 const submittedResults = ref<GameErogsItem[]>([]);
+const submittedBrands = ref<BrandErogsItem[]>([]);
 const selectedPlatform = ref<string | null>(null);
 const searchLoading = ref(false);
 const searchError = ref(false);
@@ -188,19 +277,30 @@ const filteredResults = computed(() =>
   ),
 );
 
+const resultCount = computed(() =>
+  submittedMode.value === 'game' ? filteredResults.value.length : submittedBrands.value.length,
+);
+const hasResults = computed(() =>
+  submittedMode.value === 'game'
+    ? submittedResults.value.length > 0
+    : submittedBrands.value.length > 0,
+);
+
 const {
   items: autocompleteItems,
   loading: autocompleteLoading,
   search: searchAutocomplete,
+  reset: resetAutocomplete,
 } = useErogsGameAutocomplete();
 
+watch(searchMode, () => {
+  selectedGame.value = null;
+  query.value = '';
+  resetAutocomplete();
+});
+
 watch(query, (value) => {
-  if ((value ?? '').trim() !== submittedQuery.value) {
-    hasSearched.value = false;
-    searchRequestId++;
-    searchLoading.value = false;
-  }
-  searchAutocomplete(value ?? '');
+  if (searchMode.value === 'game') searchAutocomplete(value ?? '');
 });
 
 function selectGame(game: ErogsGameAutocompleteItem | string | null) {
@@ -211,27 +311,36 @@ function gameImage(game: GameErogsItem) {
   return game.image?.trim() || PLACEHOLDER_IMAGE_URL;
 }
 
-function searchGames() {
+function submitSearch() {
   const keyword = (query.value ?? '').trim();
   if (!keyword) return;
 
-  void runSearch(keyword);
+  void runSearch(keyword, searchMode.value);
 }
 
-async function runSearch(keyword: string) {
+async function runSearch(keyword: string, mode: 'game' | 'brand') {
   const requestId = ++searchRequestId;
   submittedQuery.value = keyword;
+  submittedMode.value = mode;
   submittedResults.value = [];
+  submittedBrands.value = [];
   selectedPlatform.value = null;
   hasSearched.value = true;
   searchLoading.value = true;
   searchError.value = false;
 
   try {
-    const response = await $fetch<ApiResponse<GameErogsItem[]>>('/api/erogs/game/', {
-      query: { q: keyword },
-    });
-    if (requestId === searchRequestId) submittedResults.value = response.data ?? [];
+    if (mode === 'brand') {
+      const response = await $fetch<ApiResponse<BrandErogsItem[]>>('/api/erogs/brand/', {
+        query: { q: keyword },
+      });
+      if (requestId === searchRequestId) submittedBrands.value = response.data ?? [];
+    } else {
+      const response = await $fetch<ApiResponse<GameErogsItem[]>>('/api/erogs/game/', {
+        query: { q: keyword },
+      });
+      if (requestId === searchRequestId) submittedResults.value = response.data ?? [];
+    }
   } catch (error) {
     if (requestId === searchRequestId) {
       logApiError(error);
@@ -244,6 +353,19 @@ async function runSearch(keyword: string) {
 </script>
 
 <style scoped>
+.search-mode-enter-active,
+.search-mode-leave-active {
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.search-mode-enter-from,
+.search-mode-leave-to {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
 .search-heading__eyebrow {
   display: flex;
   align-items: center;
