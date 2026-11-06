@@ -13,10 +13,12 @@
         <v-progress-circular indeterminate color="primary" size="40" />
       </div>
 
-      <v-sheet v-else-if="error" rounded="lg" border class="pa-6 text-center">
-        <p class="text-body-2 mb-4">{{ authErrorMessage(error, '載入失敗') }}</p>
-        <v-btn variant="tonal" color="primary" class="text-none" @click="refresh()">重試</v-btn>
-      </v-sheet>
+      <LoadErrorState
+        v-else-if="error"
+        :message="authErrorMessage(error, '載入失敗')"
+        detail="無法載入公告列表，請稍後再試。"
+        @retry="refresh()"
+      />
 
       <v-sheet v-else-if="items.length === 0" rounded="lg" border class="pa-6 text-center">
         <p class="text-body-2 text-medium-emphasis mb-0">目前沒有公告</p>
