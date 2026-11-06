@@ -39,46 +39,67 @@
     </v-sheet>
 
     <v-card v-else variant="outlined" class="rounded-xl overflow-hidden game-detail-card">
-      <div v-if="coverUrl" class="game-detail-cover">
-        <v-img :src="coverUrl" max-height="320" cover class="game-detail-cover__img">
-          <template #placeholder>
-            <div class="fill-height game-img-placeholder" />
-          </template>
-        </v-img>
-      </div>
-
       <v-card-text class="pa-6 pa-md-8">
-        <div class="d-flex flex-wrap align-center justify-space-between ga-2 mb-3">
-          <div class="text-overline text-medium-emphasis mb-0">Game ID: {{ game.id }}</div>
-          <p class="text-caption text-medium-emphasis mb-0">資料來源：批評空間</p>
-        </div>
+        <div class="game-detail-header mb-6">
+          <div class="game-detail-cover">
+            <v-img
+              :src="coverUrl"
+              :alt="game.name"
+              width="220"
+              height="140"
+              class="game-detail-cover__img"
+            >
+              <template #placeholder>
+                <div class="fill-height game-img-placeholder" />
+              </template>
+              <template #error>
+                <div class="fill-height d-flex align-center justify-center text-medium-emphasis">
+                  <v-icon icon="mdi-image-off-outline" size="32" />
+                </div>
+              </template>
+            </v-img>
+          </div>
 
-        <div class="mb-4">
-          <h1 class="text-h4 font-weight-bold">{{ game.name || '—' }}</h1>
-          <p v-if="rankLabel" class="text-subtitle-2 mt-2 mb-0" :class="rankClass">
-            {{ rankLabel }}
-          </p>
-        </div>
+          <div class="game-detail-summary">
+            <div class="d-flex flex-wrap align-center ga-2 mb-3">
+              <v-chip size="small" variant="tonal" label>ID {{ game.id }}</v-chip>
+              <v-chip
+                size="small"
+                color="orange"
+                variant="tonal"
+                prepend-icon="mdi-database-outline"
+                label
+              >
+                資料來源：批評空間
+              </v-chip>
+            </div>
 
-        <div class="d-flex flex-wrap ga-2 mb-6">
-          <v-chip
-            v-if="game.brandName"
-            label
-            color="primary"
-            variant="tonal"
-            :to="game.brandId ? `/brand/${game.brandId}` : undefined"
-          >
-            品牌：{{ game.brandName }}
-          </v-chip>
-          <v-chip v-if="game.sellDay" label variant="tonal">發售日：{{ game.sellDay }}</v-chip>
-          <v-chip
-            v-if="game.model"
-            label
-            variant="tonal"
-            :color="erogsGameCategoryChipColor(game.model)"
-          >
-            {{ game.model }}
-          </v-chip>
+            <h1 class="game-detail-title font-weight-bold">{{ game.name || '—' }}</h1>
+            <p v-if="rankLabel" class="text-subtitle-2 mt-2 mb-0" :class="rankClass">
+              {{ rankLabel }}
+            </p>
+
+            <div class="d-flex flex-wrap ga-2 mt-4">
+              <v-chip
+                v-if="game.brandName"
+                label
+                color="primary"
+                variant="tonal"
+                :to="game.brandId ? `/brand/${game.brandId}` : undefined"
+              >
+                品牌：{{ game.brandName }}
+              </v-chip>
+              <v-chip v-if="game.sellDay" label variant="tonal">發售日：{{ game.sellDay }}</v-chip>
+              <v-chip
+                v-if="game.model"
+                label
+                variant="tonal"
+                :color="erogsGameCategoryChipColor(game.model)"
+              >
+                {{ game.model }}
+              </v-chip>
+            </div>
+          </div>
         </div>
 
         <v-divider class="mb-6" />
@@ -359,13 +380,41 @@ const externalLinks = computed(() => {
   );
 }
 
+.game-detail-header {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  align-items: start;
+  gap: 24px;
+}
+
 .game-detail-cover {
-  border-bottom: 1px solid rgba(var(--v-theme-outline), 0.28);
+  width: 200px;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid rgba(var(--v-theme-outline), 0.28);
+  border-radius: 12px;
   background: rgba(var(--v-theme-surface-variant), 0.45);
 }
 
 .game-detail-cover__img {
-  width: 100%;
+  max-width: 100%;
+}
+
+.game-detail-summary {
+  min-width: 0;
+}
+
+.game-detail-title {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 699px) {
+  .game-detail-header {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
 }
 
 .game-img-placeholder {

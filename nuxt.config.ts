@@ -15,6 +15,8 @@ export default defineNuxtConfig({
     '@fontsource/geist-sans/600.css',
     '@fontsource/geist-sans/700.css',
     '~/assets/css/global.css',
+    '~/assets/css/theme.css',
+    '~/assets/css/components.css',
   ],
   runtimeConfig: {
     // runtimeConfig.apiBaseUrl ← NUXT_API_BASE_URL

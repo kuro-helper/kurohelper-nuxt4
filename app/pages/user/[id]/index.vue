@@ -164,16 +164,12 @@
                 mandatory
                 density="compact"
                 variant="flat"
-                class="view-toggle"
+                class="sliding-toggle sliding-toggle--icons"
+                :class="{ 'sliding-toggle--second': gameViewMode === 'table' }"
+                aria-label="遊戲紀錄檢視方式"
               >
-                <v-btn value="card" size="small" class="view-toggle-btn">
-                  <v-icon start>mdi-view-grid</v-icon>
-                  卡片
-                </v-btn>
-                <v-btn value="table" size="small" class="view-toggle-btn">
-                  <v-icon start>mdi-table</v-icon>
-                  表格
-                </v-btn>
+                <v-btn value="card" size="small"><v-icon start>mdi-view-grid</v-icon>卡片</v-btn>
+                <v-btn value="table" size="small"><v-icon start>mdi-table</v-icon>表格</v-btn>
               </v-btn-toggle>
             </div>
           </div>
@@ -1478,14 +1474,6 @@ function formatLocalDate(input?: string | null) {
 </script>
 
 <style scoped>
-.view-toggle.v-btn-toggle {
-  height: auto;
-  padding: 3px;
-  border-radius: 999px;
-  background: rgba(var(--v-theme-on-surface), 0.06);
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.1);
-}
-
 .game-toolbar__left {
   flex: 1 1 auto;
 }
@@ -1516,20 +1504,6 @@ function formatLocalDate(input?: string | null) {
   min-height: 32px !important;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
-}
-
-.view-toggle .view-toggle-btn.v-btn {
-  border-radius: 999px !important;
-  background: transparent;
-  color: rgba(var(--v-theme-on-surface), 0.7);
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease;
-}
-
-.view-toggle .view-toggle-btn.v-btn--active {
-  background: rgb(var(--v-theme-primary));
-  color: rgb(var(--v-theme-on-primary));
 }
 
 .game-view-stack {

@@ -7,10 +7,12 @@
         mandatory
         density="compact"
         variant="flat"
-        class="brand-chart__mode-toggle"
+        class="sliding-toggle"
+        :class="{ 'sliding-toggle--second': chartMode === 'month' }"
+        aria-label="統計範圍"
       >
-        <v-btn value="overview" size="small" class="brand-chart__mode-btn">總覽</v-btn>
-        <v-btn value="month" size="small" class="brand-chart__mode-btn">月份</v-btn>
+        <v-btn value="overview" size="small">總覽</v-btn>
+        <v-btn value="month" size="small">月份</v-btn>
       </v-btn-toggle>
     </div>
 
@@ -189,28 +191,6 @@ const chartOption = computed<EChartsOption>(() => {
 </script>
 
 <style scoped>
-.brand-chart__mode-toggle.v-btn-toggle {
-  height: auto;
-  padding: 3px;
-  border-radius: 999px;
-  background: rgba(var(--v-theme-on-surface), 0.06);
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.1);
-}
-
-.brand-chart__mode-toggle .brand-chart__mode-btn.v-btn {
-  border-radius: 999px !important;
-  background: transparent;
-  color: rgba(var(--v-theme-on-surface), 0.7);
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease;
-}
-
-.brand-chart__mode-toggle .brand-chart__mode-btn.v-btn--active {
-  background: rgb(var(--v-theme-primary));
-  color: rgb(var(--v-theme-on-primary));
-}
-
 .brand-chart__canvas {
   width: 100%;
   height: 200px;
