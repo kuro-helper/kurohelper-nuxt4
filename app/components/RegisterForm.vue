@@ -76,9 +76,7 @@
 import { lookupRegisterInvite, setRegisterSubmitInfo } from '~/utils/register';
 
 type LookupState =
-  | { status: 'loading' }
-  | { status: 'not-found' }
-  | { status: 'ready'; discordId: string };
+  { status: 'loading' } | { status: 'not-found' } | { status: 'ready'; discordId: string };
 
 type ApiRes = { message: string; data: unknown };
 
@@ -143,8 +141,7 @@ const resetCredentials = () => {
 };
 
 const validateCredentials = ():
-  | { ok: true; payload: { userName: string; password: string } }
-  | { ok: false; error: string } => {
+  { ok: true; payload: { userName: string; password: string } } | { ok: false; error: string } => {
   touched.accountName = true;
   touched.password = true;
   touched.confirmPassword = true;

@@ -165,14 +165,12 @@ const chartOption = computed<EChartsOption>(() => {
         type: 'pie',
         radius: '65%',
         center: legendBottom ? ['50%', '42%'] : ['38%', '50%'],
-        data: stats.value.items.map(
-          (item): PieDatum => ({
-            name: item.name,
-            value: item.value,
-            games: item.games,
-            isOthers: item.isOthers,
-          }),
-        ),
+        data: stats.value.items.map((item): PieDatum => ({
+          name: item.name,
+          value: item.value,
+          games: item.games,
+          isOthers: item.isOthers,
+        })),
         label: {
           color: onSurface,
           formatter: '{b} ({d}%)',

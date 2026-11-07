@@ -15,5 +15,4 @@ export type VuetifyErogsAutocompleteSlotItem = {
 
 /** `#item` 傳外殼、`#selection`（return-object）可能傳整筆遊戲物件。 */
 export type ErogsAutocompleteSlotInput =
-  | VuetifyErogsAutocompleteSlotItem
-  | ErogsGameAutocompleteItem;
+  VuetifyErogsAutocompleteSlotItem | ErogsGameAutocompleteItem;

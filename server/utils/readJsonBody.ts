@@ -1,8 +1,7 @@
 import { readRawBody, setResponseStatus, type H3Event } from 'h3';
 
 export type ParsedJsonBodyResult =
-  | { ok: true; value: unknown }
-  | { ok: false; status: number; message: string };
+  { ok: true; value: unknown } | { ok: false; status: number; message: string };
 
 /** 讀取 body 並 parse JSON（invalid JSON → 400）。 */
 export const readJsonBody = async (event: H3Event): Promise<ParsedJsonBodyResult> => {
