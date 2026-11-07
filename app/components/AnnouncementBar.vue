@@ -208,12 +208,18 @@ function fmtDate(input: string) {
 }
 
 .announcement-fab {
+  overflow: visible;
   color: rgb(var(--v-theme-on-primary)) !important;
   background: rgba(var(--v-theme-primary), 0.55) !important;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14) !important;
   border: 1px solid rgba(var(--v-theme-on-primary), 0.22);
+}
+
+.announcement-fab :deep(.v-btn__overlay),
+.announcement-fab :deep(.v-btn__underlay) {
+  border-radius: inherit;
 }
 
 .announcement-fab:hover {
