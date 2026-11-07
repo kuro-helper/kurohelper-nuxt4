@@ -35,6 +35,10 @@
   transform: translateX(100%);
 }
 
+.sliding-toggle.v-btn-toggle.sliding-toggle--third::before {
+  transform: translateX(200%);
+}
+
 .sliding-toggle.v-btn-toggle .v-btn {
   position: relative;
   z-index: 1;

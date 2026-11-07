@@ -9,6 +9,7 @@ export default defineNuxtConfig({
     '/search': { ssr: false },
     '/brand': { ssr: false },
     '/brand/**': { ssr: false },
+    '/music/**': { ssr: false },
   },
   css: [
     '@fontsource/geist-sans/400.css',

@@ -47,3 +47,36 @@ export type ErogsOfficialGame = {
   junni: number;
   creators: ErogsOfficialGameCreator[];
 };
+
+export type ErogsMusicListItem = {
+  id: number;
+  name: string;
+  category: string;
+  avgTokuten: number;
+  tokutenCount: number;
+  image: string;
+  games: string[];
+};
+
+export type ErogsMusicGame = {
+  name: string;
+  model: string;
+  category: string;
+  image: string;
+};
+
+export type ErogsMusic = {
+  id: number;
+  name: string;
+  playTime: string;
+  releaseDate: string;
+  avgTokuten: number;
+  tokutenCount: number;
+  image: string;
+  singers: string[];
+  lyrics: string[];
+  compositions: string[];
+  arrangements: string[];
+  albums: string[];
+  games: ErogsMusicGame[];
+};

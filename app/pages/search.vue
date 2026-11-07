@@ -27,30 +27,29 @@
           density="compact"
           variant="flat"
           class="sliding-toggle sliding-toggle--icons mb-5"
-          :class="{ 'sliding-toggle--second': searchMode === 'brand' }"
+          :class="{
+            'sliding-toggle--second': searchMode === 'brand',
+            'sliding-toggle--third': searchMode === 'music',
+          }"
           aria-label="查詢類型"
         >
           <v-btn value="game" size="small"
             ><v-icon start>mdi-gamepad-variant-outline</v-icon>遊戲</v-btn
           >
           <v-btn value="brand" size="small"><v-icon start>mdi-domain</v-icon>品牌</v-btn>
+          <v-btn value="music" size="small"
+            ><v-icon start>mdi-music-note-outline</v-icon>音樂</v-btn
+          >
         </v-btn-toggle>
         <Transition name="search-mode" mode="out-in">
           <div :key="searchMode" class="search-card__heading mb-4">
             <div class="search-card__icon">
-              <v-icon
-                :icon="searchMode === 'game' ? 'mdi-gamepad-variant-outline' : 'mdi-domain'"
-                size="22"
-              />
+              <v-icon :icon="searchOptions[searchMode].icon" size="22" />
             </div>
             <div>
               <h2 class="text-subtitle-1 font-weight-bold">{{ searchLabel }}查詢</h2>
               <p class="text-body-2 text-medium-emphasis mb-0">
-                {{
-                  searchMode === 'game'
-                    ? '選擇建議項目，或直接輸入關鍵字'
-                    : '輸入品牌名稱或部分關鍵字'
-                }}
+                {{ searchOptions[searchMode].description }}
               </p>
             </div>
           </div>
@@ -100,10 +99,10 @@
             </v-combobox>
             <v-text-field
               v-else
-              key="brand"
+              :key="searchMode"
               v-model="query"
-              label="品牌名稱"
-              placeholder="輸入品牌名稱，例如：Key"
+              :label="`${searchLabel}名稱`"
+              :placeholder="searchOptions[searchMode].placeholder"
               prepend-inner-icon="mdi-magnify"
               variant="outlined"
               density="comfortable"
@@ -161,7 +160,7 @@
       <LoadErrorState
         v-else-if="searchError"
         :message="`無法搜尋${submittedLabel}`"
-        detail="請稍後再試。"
+        :detail="searchErrorDetail"
         @retry="runSearch(submittedQuery, submittedMode)"
       />
       <v-alert v-else-if="!hasResults" type="info" variant="tonal" rounded="lg">
@@ -171,6 +170,76 @@
         找不到符合篩選條件的遊戲。
       </v-alert>
 
+      <v-row v-else-if="submittedMode === 'music'" density="comfortable">
+        <v-col v-for="music in pagedMusics" :key="music.id" cols="12">
+          <v-card
+            rounded="xl"
+            variant="outlined"
+            class="game-card h-100 d-flex align-center pa-4 ga-4"
+            :to="`/music/${music.id}`"
+            :aria-label="`查看音樂：${music.name}`"
+          >
+            <v-img
+              :src="music.image?.trim() || PLACEHOLDER_IMAGE_URL"
+              :alt="music.name"
+              width="96"
+              height="96"
+              cover
+              class="flex-grow-0 flex-shrink-0 rounded-lg game-card-img"
+            >
+              <template #placeholder>
+                <div class="fill-height game-img-placeholder" />
+              </template>
+              <template #error>
+                <div class="fill-height d-flex align-center justify-center text-medium-emphasis">
+                  <v-icon icon="mdi-music-note-outline" size="32" />
+                </div>
+              </template>
+            </v-img>
+            <v-card-text class="pa-0 min-w-0">
+              <div class="game-card__eyebrow mb-1">MUSIC INFORMATION</div>
+              <div
+                class="game-card__name text-subtitle-1 font-weight-bold mb-2"
+                :title="music.name"
+              >
+                {{ music.name || '—' }}
+              </div>
+              <p
+                v-if="music.games.length"
+                class="music-card__games text-body-2 text-medium-emphasis mb-2"
+              >
+                收錄作品：{{ music.games.join('、') }}
+              </p>
+              <div class="d-flex flex-wrap ga-2">
+                <v-chip size="small" variant="tonal" label>ID {{ music.id }}</v-chip>
+                <v-chip v-if="music.category" size="small" color="secondary" variant="tonal" label>
+                  {{ music.category }}
+                </v-chip>
+                <v-chip
+                  v-if="music.tokutenCount > 0"
+                  size="small"
+                  color="warning"
+                  variant="tonal"
+                  label
+                >
+                  {{ music.avgTokuten.toFixed(2) }} 分 · {{ music.tokutenCount }} 筆評分
+                </v-chip>
+                <v-chip v-else size="small" variant="tonal" label>尚無評分</v-chip>
+              </div>
+            </v-card-text>
+            <v-icon class="game-card__arrow flex-shrink-0" icon="mdi-arrow-right" size="20" />
+          </v-card>
+        </v-col>
+        <v-col v-if="musicPageCount > 1" cols="12">
+          <v-pagination
+            v-model="musicPage"
+            :length="musicPageCount"
+            :total-visible="5"
+            density="comfortable"
+            aria-label="音樂搜尋結果分頁"
+          />
+        </v-col>
+      </v-row>
       <v-row v-else-if="submittedMode === 'brand'" density="comfortable">
         <v-col v-for="brand in submittedBrands" :key="brand.id" cols="12">
           <v-card
@@ -246,28 +315,62 @@
 </template>
 
 <script setup lang="ts">
-import type { BrandErogsItem, GameErogsItem } from '~/types/erogs-api';
+import type { BrandErogsItem, ErogsMusicListItem, GameErogsItem } from '~/types/erogs-api';
 import type { ErogsGameAutocompleteItem } from '~/types/game-erogs-api';
-import type { ApiResponse } from '~/types/user-api';
+import type { ApiResponse, FetchErrorLike } from '~/types/user-api';
 import { logApiError } from '~/utils/apiError';
 
 definePageMeta({ middleware: 'auth' });
 
 const PLACEHOLDER_IMAGE_URL = 'https://cdn.kurohelper.com/docs/neneGIF.gif';
 
+type SearchMode = 'game' | 'brand' | 'music';
+
+const searchOptions = {
+  game: {
+    label: '遊戲',
+    icon: 'mdi-gamepad-variant-outline',
+    description: '選擇建議項目，或直接輸入關鍵字',
+    placeholder: '輸入遊戲名稱，例如：Summer Pockets',
+  },
+  brand: {
+    label: '品牌',
+    icon: 'mdi-domain',
+    description: '輸入品牌名稱或部分關鍵字',
+    placeholder: '輸入品牌名稱，例如：Key',
+  },
+  music: {
+    label: '音樂',
+    icon: 'mdi-music-note-outline',
+    description: '輸入歌曲名稱，直接查詢批評空間',
+    placeholder: '輸入歌曲名稱，例如：鳥の詩',
+  },
+};
+
 const query = ref<string | undefined>('');
-const searchMode = ref<'game' | 'brand'>('game');
-const searchLabel = computed(() => (searchMode.value === 'game' ? '遊戲' : '品牌'));
+const searchMode = ref<SearchMode>('game');
+const searchLabel = computed(() => searchOptions[searchMode.value].label);
 const selectedGame = ref<ErogsGameAutocompleteItem | string | null>(null);
 const hasSearched = ref(false);
 const submittedQuery = ref('');
-const submittedMode = ref<'game' | 'brand'>('game');
-const submittedLabel = computed(() => (submittedMode.value === 'game' ? '遊戲' : '品牌'));
+const submittedMode = ref<SearchMode>('game');
+const submittedLabel = computed(() => searchOptions[submittedMode.value].label);
 const submittedResults = ref<GameErogsItem[]>([]);
 const submittedBrands = ref<BrandErogsItem[]>([]);
+const submittedMusics = ref<ErogsMusicListItem[]>([]);
+const musicPage = ref(1);
+const MUSIC_PAGE_SIZE = 20;
+const musicPageCount = computed(() => Math.ceil(submittedMusics.value.length / MUSIC_PAGE_SIZE));
+const pagedMusics = computed(() =>
+  submittedMusics.value.slice(
+    (musicPage.value - 1) * MUSIC_PAGE_SIZE,
+    musicPage.value * MUSIC_PAGE_SIZE,
+  ),
+);
 const selectedPlatform = ref<string | null>(null);
 const searchLoading = ref(false);
 const searchError = ref(false);
+const searchErrorDetail = ref('請稍後再試。');
 let searchRequestId = 0;
 
 const filteredResults = computed(() =>
@@ -277,13 +380,14 @@ const filteredResults = computed(() =>
   ),
 );
 
-const resultCount = computed(() =>
-  submittedMode.value === 'game' ? filteredResults.value.length : submittedBrands.value.length,
-);
+const resultCount = computed(() => {
+  if (submittedMode.value === 'music') return submittedMusics.value.length;
+  return submittedMode.value === 'game'
+    ? filteredResults.value.length
+    : submittedBrands.value.length;
+});
 const hasResults = computed(() =>
-  submittedMode.value === 'game'
-    ? submittedResults.value.length > 0
-    : submittedBrands.value.length > 0,
+  submittedMode.value === 'game' ? submittedResults.value.length > 0 : resultCount.value > 0,
 );
 
 const {
@@ -318,16 +422,19 @@ function submitSearch() {
   void runSearch(keyword, searchMode.value);
 }
 
-async function runSearch(keyword: string, mode: 'game' | 'brand') {
+async function runSearch(keyword: string, mode: SearchMode) {
   const requestId = ++searchRequestId;
   submittedQuery.value = keyword;
   submittedMode.value = mode;
   submittedResults.value = [];
   submittedBrands.value = [];
+  submittedMusics.value = [];
+  musicPage.value = 1;
   selectedPlatform.value = null;
   hasSearched.value = true;
   searchLoading.value = true;
   searchError.value = false;
+  searchErrorDetail.value = '請稍後再試。';
 
   try {
     if (mode === 'brand') {
@@ -335,6 +442,12 @@ async function runSearch(keyword: string, mode: 'game' | 'brand') {
         query: { q: keyword },
       });
       if (requestId === searchRequestId) submittedBrands.value = response.data ?? [];
+    } else if (mode === 'music') {
+      const response = await $fetch<ApiResponse<ErogsMusicListItem[]>>('/api/erogs/music/', {
+        query: { q: keyword },
+        retry: 0,
+      });
+      if (requestId === searchRequestId) submittedMusics.value = response.data ?? [];
     } else {
       const response = await $fetch<ApiResponse<GameErogsItem[]>>('/api/erogs/game/', {
         query: { q: keyword },
@@ -345,6 +458,8 @@ async function runSearch(keyword: string, mode: 'game' | 'brand') {
     if (requestId === searchRequestId) {
       logApiError(error);
       searchError.value = true;
+      const status = (error as FetchErrorLike).statusCode ?? (error as FetchErrorLike).status;
+      if (status === 429) searchErrorDetail.value = '批評空間查詢過於頻繁，請稍後再試。';
     }
   } finally {
     if (requestId === searchRequestId) searchLoading.value = false;
@@ -491,6 +606,20 @@ async function runSearch(keyword: string, mode: 'game' | 'brand') {
   transform: translateY(-2px);
   box-shadow: 0 10px 32px rgba(0, 0, 0, 0.14) !important;
   border-color: rgba(var(--v-theme-primary), 0.45) !important;
+}
+
+.game-card:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: 3px;
+}
+
+.music-card__games {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow-wrap: anywhere;
 }
 
 .game-card-img {
