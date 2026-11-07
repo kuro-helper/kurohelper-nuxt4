@@ -10,8 +10,8 @@
       <v-chip
         class="mt-3"
         size="small"
-        color="orange"
-        variant="tonal"
+        color="source"
+        variant="flat"
         prepend-icon="mdi-database-outline"
         label
       >
