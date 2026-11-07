@@ -1,8 +1,8 @@
 <template>
   <v-container max-width="lg" class="py-8 px-4">
     <div class="mb-4">
-      <v-btn variant="text" class="text-none px-0" prepend-icon="mdi-arrow-left" :to="'/brand'">
-        返回品牌列表
+      <v-btn variant="text" class="text-none px-0" prepend-icon="mdi-arrow-left" to="/search">
+        返回查詢
       </v-btn>
     </div>
 
@@ -27,7 +27,7 @@
       <v-icon size="48" color="medium-emphasis" class="mb-4">mdi-domain-off</v-icon>
       <p class="text-body-1 font-weight-medium mb-2">找不到品牌</p>
       <p class="text-body-2 text-medium-emphasis mb-4">ID {{ idParam }} 不存在或尚未建檔。</p>
-      <v-btn color="primary" variant="tonal" :to="'/brand'">回到列表</v-btn>
+      <v-btn color="primary" variant="tonal" to="/search">返回查詢</v-btn>
     </v-sheet>
 
     <template v-else>

@@ -227,8 +227,10 @@ const brandFromQuery = computed(() => {
   return typeof raw === 'string' ? raw.trim() : '';
 });
 
-const backTo = computed(() => (brandFromQuery.value ? `/brand/${brandFromQuery.value}` : '/brand'));
-const backLabel = computed(() => (brandFromQuery.value ? '返回品牌' : '返回品牌列表'));
+const backTo = computed(() =>
+  brandFromQuery.value ? `/brand/${brandFromQuery.value}` : '/search',
+);
+const backLabel = computed(() => (brandFromQuery.value ? '返回品牌' : '返回查詢'));
 
 const emptyResponse = (): ApiResponse<ErogsOfficialGame | null> => ({
   message: '',
