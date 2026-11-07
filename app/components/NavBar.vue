@@ -197,7 +197,6 @@ const canManageAnnouncement = computed(() => {
 const navItems = computed(() => [
   { to: '/', label: '首頁', icon: 'mdi-home-outline' },
   { to: '/search', label: '查詢', icon: 'mdi-magnify', disabled: !isLoggedIn.value },
-  { to: '/brand', label: '品牌詳情', icon: 'mdi-domain', disabled: !isLoggedIn.value },
   { to: '/user', label: '使用者', icon: 'mdi-account-outline' },
   { to: '/register', label: '註冊', icon: 'mdi-account-plus-outline' },
 ]);

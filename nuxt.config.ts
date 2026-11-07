@@ -7,7 +7,6 @@ export default defineNuxtConfig({
     '/game': { ssr: false },
     '/game/**': { ssr: false },
     '/search': { ssr: false },
-    '/brand': { ssr: false },
     '/brand/**': { ssr: false },
     '/music/**': { ssr: false },
   },
