@@ -65,8 +65,8 @@
               <v-chip size="small" variant="tonal" label>ID {{ game.id }}</v-chip>
               <v-chip
                 size="small"
-                color="orange"
-                variant="tonal"
+                color="source"
+                variant="flat"
                 prepend-icon="mdi-database-outline"
                 label
               >

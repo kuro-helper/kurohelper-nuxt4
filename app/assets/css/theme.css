@@ -12,29 +12,53 @@
   border-color: rgba(var(--v-theme-outline), 0.5);
 }
 
-.v-theme--light .v-application,
-.v-application.v-theme--light {
-  background-color: rgb(var(--v-theme-background));
-  background-image:
-    radial-gradient(circle at 18% 0%, rgba(29, 78, 216, 0.16), transparent 38%),
-    radial-gradient(circle at 84% 8%, rgba(2, 132, 199, 0.14), transparent 36%),
-    radial-gradient(circle at 50% 100%, rgba(37, 99, 235, 0.08), transparent 42%),
-    linear-gradient(165deg, #dce4f2 0%, #e8eef8 48%, #eef2f8 100%);
-  background-attachment: fixed;
-  min-height: 100vh;
+.v-theme--dark .v-application .mui-card,
+.v-application.v-theme--dark .mui-card {
+  box-shadow: 0 12px 28px rgba(6, 12, 24, 0.16);
 }
 
-.v-theme--dark .v-application,
-.v-application.v-theme--dark {
-  background-color: rgb(var(--v-theme-background));
-  background-image:
-    radial-gradient(circle at 20% 0%, rgba(var(--v-theme-primary), 0.1), transparent 38%),
-    radial-gradient(circle at 82% 10%, rgba(var(--v-theme-secondary), 0.08), transparent 36%),
-    linear-gradient(
-      165deg,
-      rgb(var(--v-theme-background-start)) 0%,
-      rgb(var(--v-theme-background-end)) 100%
-    );
-  background-attachment: fixed;
+.v-application {
+  --app-background-mask-start: 0.74;
+  --app-background-mask-end: 0.86;
+  position: relative;
+  isolation: isolate;
   min-height: 100vh;
+  background-color: rgb(var(--v-theme-background));
+}
+
+.v-application.v-theme--dark {
+  --app-background-mask-start: 0.68;
+  --app-background-mask-end: 0.82;
+}
+
+.v-application::before,
+.v-application::after {
+  position: fixed;
+  inset: 0;
+  content: '';
+  pointer-events: none;
+}
+
+.v-application::before {
+  z-index: -2;
+  background: url('/backgrounds/background.webp') center / cover no-repeat;
+  filter: blur(3px);
+}
+
+.v-application::after {
+  z-index: -1;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(var(--v-theme-primary), 0.08), transparent 50%),
+    linear-gradient(
+      160deg,
+      rgba(var(--v-theme-background-start), var(--app-background-mask-start)) 0%,
+      rgba(var(--v-theme-background-end), var(--app-background-mask-end)) 100%
+    );
+}
+
+/* 窄螢幕直向使用較小的裁切版本 */
+@media (max-width: 699px) and (orientation: portrait) {
+  .v-application::before {
+    background-image: url('/backgrounds/background-mobile.webp');
+  }
 }
