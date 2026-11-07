@@ -7,6 +7,8 @@
   --sliding-toggle-width: 64px;
   position: relative;
   display: inline-flex;
+  /* 避免回彈動畫超出邊界時觸發按鈕群組的橫向捲軸。 */
+  overflow: clip;
   height: auto;
   padding: 3px;
   border: 1px solid rgba(var(--v-theme-on-surface), 0.1);
