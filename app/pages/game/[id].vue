@@ -277,7 +277,7 @@ function makeDmmImageUrl(dmm: string) {
 const coverUrl = computed(() => {
   if (!game.value) return PLACEHOLDER_IMAGE_URL;
   const dmm = makeDmmImageUrl(game.value.dmm);
-  return dmm || PLACEHOLDER_IMAGE_URL;
+  return game.value.image?.trim() || dmm || PLACEHOLDER_IMAGE_URL;
 });
 
 const ageLabel = computed(() => {

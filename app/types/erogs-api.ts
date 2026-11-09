@@ -33,6 +33,7 @@ export type ErogsOfficialGame = {
   sellDay: string;
   model: string;
   dmm: string;
+  image: string;
   median: string;
   tokutenCount: string;
   totalPlayTimeMedian: string;
