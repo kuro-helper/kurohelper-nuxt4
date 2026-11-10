@@ -3,10 +3,17 @@
     <v-card variant="outlined" class="rounded-xl pa-6 pa-md-8">
       <div class="d-flex align-center justify-space-between flex-wrap ga-2 mb-6">
         <div>
-          <h1 class="text-h5 font-weight-bold mb-1">刪除公告</h1>
-          <p class="text-body-2 text-medium-emphasis mb-0">刪除後無法復原</p>
+          <h1 class="text-h5 font-weight-bold mb-1">公告</h1>
+          <p class="text-body-2 text-medium-emphasis mb-0">點選公告可展開查看完整內容</p>
         </div>
-        <v-btn variant="text" class="text-none" to="/announcement/create">建立公告</v-btn>
+        <v-btn
+          v-if="canManageAnnouncement"
+          variant="text"
+          class="text-none"
+          to="/announcement/create"
+        >
+          建立公告
+        </v-btn>
       </div>
 
       <div v-if="pending" class="d-flex justify-center py-12">
@@ -25,17 +32,35 @@
       </v-sheet>
 
       <div v-else class="d-flex flex-column ga-3">
-        <div v-for="item in items" :key="item.id" class="delete-row">
-          <v-avatar size="36" rounded="lg" class="delete-row__icon">
-            <v-icon size="20" color="primary">{{ item.icon || 'mdi-bullhorn-outline' }}</v-icon>
-          </v-avatar>
-          <div class="delete-row__body min-w-0">
-            <div class="text-body-2 font-weight-medium text-truncate">{{ item.title }}</div>
-            <div class="text-caption text-medium-emphasis">
-              {{ item.category }} · {{ fmtDate(item.createdAt) }}
+        <div v-for="item in items" :key="item.id" class="announcement-row">
+          <details class="announcement-row__details">
+            <summary class="announcement-row__summary">
+              <v-avatar size="36" rounded="lg" class="announcement-row__icon">
+                <v-icon size="20" color="primary">{{ item.icon || 'mdi-bullhorn-outline' }}</v-icon>
+              </v-avatar>
+              <div class="announcement-row__heading">
+                <div class="text-body-2 font-weight-medium">{{ item.title }}</div>
+                <div class="text-caption text-medium-emphasis">
+                  {{ item.category }} · {{ fmtDate(item.createdAt) }}
+                </div>
+              </div>
+              <v-icon size="20" class="announcement-row__chevron" aria-hidden="true">
+                mdi-chevron-down
+              </v-icon>
+            </summary>
+            <div class="announcement-row__content">
+              <MarkdownContent :source="item.content" />
+              <v-img
+                v-if="item.image"
+                :src="item.image"
+                max-height="320"
+                contain
+                class="mt-4 rounded-lg"
+              />
             </div>
-          </div>
+          </details>
           <v-btn
+            v-if="canManageAnnouncement"
             icon="mdi-delete-outline"
             variant="text"
             color="error"
@@ -49,7 +74,7 @@
       </div>
     </v-card>
 
-    <v-dialog v-model="confirmOpen" max-width="400" opacity="0.58">
+    <v-dialog v-if="canManageAnnouncement" v-model="confirmOpen" max-width="400" opacity="0.58">
       <v-card rounded="xl" variant="flat" color="surface">
         <v-card-title class="text-subtitle-1 font-weight-bold">確認刪除</v-card-title>
         <v-card-text> 確定要刪除「{{ target?.title }}」嗎？此操作無法復原。 </v-card-text>
@@ -82,18 +107,13 @@ import type { AnnouncementItem, AnnouncementListResponse } from '~/types/announc
 import type { ApiResponse } from '~/types/user-api';
 import { isUserRoleStaff } from '~/utils/userRole';
 
-definePageMeta({ middleware: 'staff' });
-
 useSeoMeta({
-  title: '刪除公告',
+  title: '公告',
   robots: 'noindex, nofollow, noarchive',
 });
 
-const { user, refresh: refreshAuth } = useAuth();
-await refreshAuth();
-if (!user.value || !isUserRoleStaff(user.value.role)) {
-  throw createError({ statusCode: 403, statusMessage: '權限不足', fatal: true });
-}
+const { user } = useAuth();
+const canManageAnnouncement = computed(() => !!user.value && isUserRoleStaff(user.value.role));
 
 const { data, pending, error, refresh } = await useFetch<AnnouncementListResponse>(
   '/api/announcement',
@@ -117,13 +137,14 @@ function fmtDate(input: string) {
 }
 
 function confirmDelete(item: AnnouncementItem) {
+  if (!canManageAnnouncement.value) return;
   target.value = item;
   confirmOpen.value = true;
 }
 
 async function doDelete() {
   const item = target.value;
-  if (!item || deletingId.value !== null) return;
+  if (!canManageAnnouncement.value || !item || deletingId.value !== null) return;
 
   deletingId.value = item.id;
   try {
@@ -145,9 +166,9 @@ async function doDelete() {
 </script>
 
 <style scoped>
-.delete-row {
+.announcement-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   padding: 10px 12px;
   border-radius: 12px;
@@ -155,13 +176,47 @@ async function doDelete() {
   background: rgba(var(--v-theme-surface-variant), 0.35);
 }
 
-.delete-row__icon {
+.announcement-row__details {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.announcement-row__summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 40px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.announcement-row__summary::-webkit-details-marker {
+  display: none;
+}
+
+.announcement-row__icon {
   flex-shrink: 0;
   border: 1px solid rgba(var(--v-theme-outline), 0.4);
   background: rgba(var(--v-theme-primary), 0.12);
 }
 
-.delete-row__body {
+.announcement-row__heading {
   flex: 1 1 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.announcement-row__chevron {
+  flex-shrink: 0;
+  transition: transform 0.18s ease;
+}
+
+.announcement-row__details[open] .announcement-row__chevron {
+  transform: rotate(180deg);
+}
+
+.announcement-row__content {
+  padding: 14px 0 2px;
+  overflow-wrap: anywhere;
 }
 </style>

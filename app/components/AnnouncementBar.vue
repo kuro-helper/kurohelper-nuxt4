@@ -69,8 +69,9 @@
           </button>
         </div>
 
-        <div v-if="hasMore" class="announcement-panel__more">
+        <div class="announcement-panel__more">
           <v-btn
+            v-if="hasMore"
             variant="text"
             size="small"
             block
@@ -78,7 +79,18 @@
             :prepend-icon="expanded ? 'mdi-chevron-up' : 'mdi-chevron-down'"
             @click="expanded = !expanded"
           >
-            {{ expanded ? '收合' : `看更多（還有 ${hiddenCount} 則）` }}
+            {{ expanded ? '收合' : `展開（還有 ${hiddenCount} 則）` }}
+          </v-btn>
+          <v-btn
+            to="/announcement"
+            variant="text"
+            size="small"
+            block
+            class="text-none"
+            append-icon="mdi-arrow-right"
+            @click="panelOpen = false"
+          >
+            查看更多
           </v-btn>
         </div>
       </v-card>
@@ -138,6 +150,7 @@
 import type { AnnouncementItem, AnnouncementListResponse } from '~/types/announcement-api';
 
 const DEFAULT_VISIBLE = 3;
+const MAX_VISIBLE = 10;
 
 const props = defineProps<{
   /** 傳入時只撈該分類；省略則全部 */
@@ -178,9 +191,11 @@ function onPanelOpenUpdate(open: boolean) {
 }
 
 const hasMore = computed(() => items.value.length > DEFAULT_VISIBLE);
-const hiddenCount = computed(() => Math.max(0, items.value.length - DEFAULT_VISIBLE));
+const hiddenCount = computed(() =>
+  Math.max(0, Math.min(items.value.length, MAX_VISIBLE) - DEFAULT_VISIBLE),
+);
 const visibleItems = computed(() =>
-  expanded.value ? items.value : items.value.slice(0, DEFAULT_VISIBLE),
+  items.value.slice(0, expanded.value ? MAX_VISIBLE : DEFAULT_VISIBLE),
 );
 
 function openDetail(item: AnnouncementItem) {
@@ -229,6 +244,7 @@ function fmtDate(input: string) {
 .announcement-panel {
   width: 100%;
   max-width: 100%;
+  max-height: min(720px, calc(100dvh - 160px));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -250,12 +266,14 @@ function fmtDate(input: string) {
   flex-direction: column;
   gap: 8px;
   padding: 10px 12px;
-  overflow: hidden;
+  overflow-y: auto;
+  min-height: 0;
   min-width: 0;
 }
 
 .announcement-item {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 10px;
   width: 100%;

@@ -85,18 +85,6 @@
                 title="個人資料"
               />
               <v-list-item
-                v-if="canManageAnnouncement"
-                to="/announcement/create"
-                prepend-icon="mdi-bullhorn-variant-outline"
-                title="建立公告"
-              />
-              <v-list-item
-                v-if="canManageAnnouncement"
-                to="/announcement/delete"
-                prepend-icon="mdi-delete-outline"
-                title="刪除公告"
-              />
-              <v-list-item
                 prepend-icon="mdi-logout"
                 title="登出"
                 :disabled="logoutLoading"
@@ -175,8 +163,6 @@
 </template>
 
 <script setup lang="ts">
-import { isUserRoleStaff } from '~/utils/userRole';
-
 const route = useRoute();
 const { isDark, toggleTheme } = useAppTheme();
 const { user, isLoggedIn, login, logout, refresh } = useAuth();
@@ -189,15 +175,11 @@ const loginLoading = ref(false);
 const loginError = ref('');
 const logoutLoading = ref(false);
 
-const canManageAnnouncement = computed(() => {
-  const u = user.value;
-  return !!u && isUserRoleStaff(u.role);
-});
-
 const navItems = computed(() => [
   { to: '/', label: '首頁', icon: 'mdi-home-outline' },
   { to: '/search', label: '查詢', icon: 'mdi-magnify', disabled: !isLoggedIn.value },
   { to: '/user', label: '使用者', icon: 'mdi-account-outline' },
+  { to: '/announcement', label: '公告', icon: 'mdi-bullhorn-outline' },
   { to: '/register', label: '註冊', icon: 'mdi-account-plus-outline' },
 ]);
 
